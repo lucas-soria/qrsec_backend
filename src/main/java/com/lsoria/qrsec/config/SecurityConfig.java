@@ -1,21 +1,20 @@
 package com.lsoria.qrsec.config;
 
 import com.lsoria.qrsec.repository.UserRepository;
-import com.lsoria.qrsec.security.filter.CustomAuthenticationFilter;
 import com.lsoria.qrsec.security.filter.CustomAuthorizationFilter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
-import org.springframework.security.config.annotation.method.configuration.EnableGlobalMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
-import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
+import org.springframework.security.config.annotation.web.configuration.WebSecurityCustomizer;
+import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.security.web.firewall.DefaultHttpFirewall;
 import org.springframework.security.web.firewall.HttpFirewall;
@@ -26,13 +25,11 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import java.util.Arrays;
 
 import static java.lang.String.format;
-import static org.springframework.security.config.http.SessionCreationPolicy.STATELESS;
 
 @EnableWebSecurity
 @Configuration
 @RequiredArgsConstructor
-@EnableGlobalMethodSecurity(prePostEnabled = true, securedEnabled = true)
-public class SecurityConfig extends WebSecurityConfigurerAdapter {
+public class SecurityConfig {
 
     @Autowired
     PasswordEncoder passwordEncoder;
@@ -53,36 +50,30 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
     private String refreshToken;
 
     @Bean
-    @Override
-    public AuthenticationManager authenticationManagerBean() throws Exception {
-        return super.authenticationManagerBean();
+    public WebSecurityCustomizer webSecurityCustomizer() {
+        return (web) -> web.ignoring().requestMatchers("/ignore1", "/ignore2");
     }
 
-    @Override
-    protected void configure(AuthenticationManagerBuilder auth) throws Exception {
-        auth.userDetailsService(username -> userRepository
+    @Bean
+    public UserDetailsService userDetailsService(AuthenticationManagerBuilder auth) throws Exception{
+        return auth.userDetailsService(username -> userRepository
                 .findByUsername(username)
                 .orElseThrow(
                         () -> new UsernameNotFoundException(
                                 format("User: %s, not found", username)
                         )
-                )).passwordEncoder(passwordEncoder);
+                )
+        ).getUserDetailsService();
     }
 
-    @Override
-    protected void configure(HttpSecurity http) throws Exception {
-        http.cors().and();
-        CustomAuthenticationFilter customAuthenticationFilter = new CustomAuthenticationFilter(authenticationManagerBean());
-        customAuthenticationFilter.setFilterProcessesUrl(this.path + this.login);
-        http.csrf().disable();
-        http.sessionManagement().sessionCreationPolicy(STATELESS);
-        http.authorizeRequests().antMatchers(this.path + this.login + "/**", this.path + this.refreshToken + "/**").permitAll();
-        http.authorizeRequests().antMatchers("GET", this.path + this.invite + "/**").permitAll();
-        http.authorizeRequests().antMatchers(this.path + "/**").authenticated();
-        http.authorizeRequests().anyRequest().authenticated();
-        http.exceptionHandling().accessDeniedPage(this.path + this.login);
-        http.addFilter(customAuthenticationFilter);
+    @Bean
+    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http.addFilterBefore(new CustomAuthorizationFilter(), UsernamePasswordAuthenticationFilter.class);
+        http
+                .authorizeHttpRequests((authz) -> authz
+                        .anyRequest().authenticated()
+                );
+        return http.build();
     }
 
     @Bean

@@ -9,6 +9,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
@@ -28,38 +29,22 @@ import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
 @Slf4j
 public class CustomAuthenticationFilter extends UsernamePasswordAuthenticationFilter {
 
-    private final AuthenticationManager authenticationManager;
+    private AuthenticationManager authenticationManager;
     private String jsonPassword;
     private String jsonUsername;
 
+    public CustomAuthenticationFilter() {
+        super();
+    }
+
+    /*
     public CustomAuthenticationFilter(AuthenticationManager authenticationManager) {
         this.authenticationManager = authenticationManager;
     }
+    */
 
     @Override
-    protected String obtainPassword(HttpServletRequest request) {
-        String password;
-        if ("application/json".equals(request.getHeader("Content-Type"))) {
-            password = this.jsonPassword;
-        } else {
-            password = super.obtainPassword(request);
-        }
-        return password;
-    }
-
-    @Override
-    protected String obtainUsername(HttpServletRequest request){
-        String username;
-        if ("application/json".equals(request.getHeader("Content-Type"))) {
-            username = this.jsonUsername;
-        } else {
-            username = super.obtainUsername(request);
-        }
-        return username;
-    }
-
-    @Override
-    public Authentication attemptAuthentication(HttpServletRequest request, HttpServletResponse response){
+    public Authentication attemptAuthentication(jakarta.servlet.http.HttpServletRequest request, jakarta.servlet.http.HttpServletResponse response) throws AuthenticationException {
         if ("application/json".equals(request.getHeader("Content-Type"))) {
             try {
                 /*
@@ -83,10 +68,54 @@ public class CustomAuthenticationFilter extends UsernamePasswordAuthenticationFi
             }
         }
         UsernamePasswordAuthenticationToken authenticationToken = new UsernamePasswordAuthenticationToken(this.jsonUsername, this.jsonPassword);
-        return authenticationManager.authenticate(authenticationToken);
+        return this.authenticationManager.authenticate(authenticationToken);
+        // return super.attemptAuthentication(request, response);
     }
 
     @Override
+    protected String obtainPassword(jakarta.servlet.http.HttpServletRequest request) {
+        String password;
+        if ("application/json".equals(request.getHeader("Content-Type"))) {
+            password = this.jsonPassword;
+        } else {
+            password = super.obtainPassword(request);
+        }
+        return password;
+        // return super.obtainPassword(request);
+    }
+
+    @Override
+    protected String obtainUsername(jakarta.servlet.http.HttpServletRequest request) {
+        String username;
+        if ("application/json".equals(request.getHeader("Content-Type"))) {
+            username = this.jsonUsername;
+        } else {
+            username = super.obtainUsername(request);
+        }
+        return username;
+        // return super.obtainUsername(request);
+    }
+
+    @Override
+    protected void setDetails(jakarta.servlet.http.HttpServletRequest request, UsernamePasswordAuthenticationToken authRequest) {
+        super.setDetails(request, authRequest);
+    }
+
+    @Override
+    public void setUsernameParameter(String usernameParameter) {
+        super.setUsernameParameter(usernameParameter);
+    }
+
+    @Override
+    public void setPasswordParameter(String passwordParameter) {
+        super.setPasswordParameter(passwordParameter);
+    }
+
+    @Override
+    public void setPostOnly(boolean postOnly) {
+        super.setPostOnly(postOnly);
+    }
+
     public void successfulAuthentication(HttpServletRequest request, HttpServletResponse response, FilterChain chain, Authentication authentication) throws IOException {
         User user = (User)authentication.getPrincipal();
         Algorithm algorithm = Algorithm.HMAC256("secret".getBytes());  // TODO: Change this for the public key
