@@ -8,13 +8,13 @@
 		<version>2.6.6</version>
 		<relativePath/> <!-- lookup parent from repository -->
 	</parent>
-	<groupId>ar.edu.um.qrsec</groupId>
-	<artifactId>qrsec_backend</artifactId>
+	<groupId>com.lsoria.qrsec</groupId>
+	<artifactId>qrsec</artifactId>
 	<version>1.2.0</version>
-	<name>qrsec-backend</name>
+	<name>qrsec</name>
 	<description>Proyecto Final de Grado (Tesis)</description>
 	<properties>
-		<java.version>11</java.version>
+		<java.version>21</java.version>
 		<org.mapstruct.version>1.4.2.Final</org.mapstruct.version>
 	</properties>
 	<dependencies>
