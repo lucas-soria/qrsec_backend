@@ -1,10 +1,10 @@
 package com.lsoria.qrsec.security.filter;
 
-import com.lsoria.qrsec.domain.dto.JsonUserLoginDTO;
-import com.lsoria.qrsec.domain.model.User;
 import com.auth0.jwt.JWT;
 import com.auth0.jwt.algorithms.Algorithm;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.lsoria.qrsec.domain.dto.JsonUserLoginDTO;
+import com.lsoria.qrsec.domain.model.User;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;

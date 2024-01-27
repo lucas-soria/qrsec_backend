@@ -12,6 +12,11 @@ java {
     sourceCompatibility = JavaVersion.VERSION_21
 }
 
+jar {
+    archiveBaseName = 'qrsec_backend'
+    archiveVersion =  '0.0.1'
+}
+
 application {
     mainClass = 'com.lsoria.qrsec.QrsecApplication'
 }
@@ -42,9 +47,9 @@ dependencies {
     testCompileOnly 'org.projectlombok:lombok:1.18.30'
     testAnnotationProcessor 'org.projectlombok:lombok:1.18.30'
 
-    compileOnly 'javax.servlet:javax.servlet-api:4.0.1'
+    implementation 'javax.servlet:javax.servlet-api:4.0.1'
 }
 
+description = 'qrsec'
 group = 'com.lsoria.qrsec'
 version = '0.0.1'
-description = 'qrsec'
