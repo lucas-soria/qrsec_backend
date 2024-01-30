@@ -1,7 +1,10 @@
 package com.lsoria.qrsec.config;
 
+import java.util.Arrays;
+
 import com.lsoria.qrsec.repository.UserRepository;
 import com.lsoria.qrsec.security.filter.CustomAuthorizationFilter;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -20,8 +23,6 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
-import java.util.Arrays;
-
 import static java.lang.String.format;
 
 @Configuration
@@ -39,10 +40,10 @@ public class SecurityConfig {
     @Value("${api.path.login}")
     private String login;
 
-    @Value("${api.path.invite}")
+    @Value("${api.path.invites}")
     private String invite;
 
-    @Value("${api.path.refresh}")
+    @Value("${api.path.token.refresh}")
     private String refreshToken;
 
     @Bean
@@ -67,7 +68,7 @@ public class SecurityConfig {
         http.addFilterBefore(new CustomAuthorizationFilter(), UsernamePasswordAuthenticationFilter.class);
         http
                 .authorizeHttpRequests((authz) -> authz
-                        .anyRequest().authenticated()
+                        .anyRequest().permitAll()
                 );
         return http.build();
     }

@@ -25,7 +25,7 @@ public class InviteService {
     UserRepository userRepository;
 
     public Invite save(Invite invite) {
-        log.debug("Request to save Invite : {}", invite);
+        log.info("Request to save Invite : {}", invite);
         String currentlyLoggedInUsername = new SecurityContextUserInfo().getUsername();
         invite.setOwner(userRepository.findByUsername(currentlyLoggedInUsername).get());
         invite.setCreated(LocalDateTime.now());
@@ -35,12 +35,12 @@ public class InviteService {
     }
 
     public Optional<Invite> findOne(String id) {
-        log.debug("Request to find Invite : {}", id);
+        log.info("Request to find Invite : {}", id);
         return inviteRepository.findById(id);
     }
 
     public List<Invite> findAll() {
-        log.debug("Request to find all Invite");
+        log.info("Request to find all Invite");
         return inviteRepository.findAll();
     }
 

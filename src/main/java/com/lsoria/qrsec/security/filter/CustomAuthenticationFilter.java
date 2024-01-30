@@ -31,7 +31,7 @@ public class CustomAuthenticationFilter extends UsernamePasswordAuthenticationFi
 
     private AuthenticationManager authenticationManager;
     private String jsonPassword;
-    private String jsonUsername;
+    private String jsonEmail;
 
     public CustomAuthenticationFilter() {
         super();
@@ -61,13 +61,13 @@ public class CustomAuthenticationFilter extends UsernamePasswordAuthenticationFi
                 //json transformation
                 ObjectMapper mapper = new ObjectMapper();
                 JsonUserLoginDTO jsonUserLoginDTO = mapper.readValue(stringBuffer.toString(), JsonUserLoginDTO.class);
-                this.jsonUsername = jsonUserLoginDTO.getUsername();
+                this.jsonEmail = jsonUserLoginDTO.getEmail();
                 this.jsonPassword = jsonUserLoginDTO.getPassword();
             } catch (Exception e) {
                 e.printStackTrace();
             }
         }
-        UsernamePasswordAuthenticationToken authenticationToken = new UsernamePasswordAuthenticationToken(this.jsonUsername, this.jsonPassword);
+        UsernamePasswordAuthenticationToken authenticationToken = new UsernamePasswordAuthenticationToken(this.jsonEmail, this.jsonPassword);
         return this.authenticationManager.authenticate(authenticationToken);
         // return super.attemptAuthentication(request, response);
     }
@@ -88,7 +88,7 @@ public class CustomAuthenticationFilter extends UsernamePasswordAuthenticationFi
     protected String obtainUsername(jakarta.servlet.http.HttpServletRequest request) {
         String username;
         if ("application/json".equals(request.getHeader("Content-Type"))) {
-            username = this.jsonUsername;
+            username = this.jsonEmail;
         } else {
             username = super.obtainUsername(request);
         }

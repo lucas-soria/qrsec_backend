@@ -24,7 +24,8 @@ public class GuestService {
     UserRepository userRepository;
 
     public Guest save(Guest guest) {
-        log.debug("Request to save Guest : {}", guest);
+        
+        log.info("Request to save Guest : {}", guest);
         Optional<Guest> optionalGuest = guestRepository.findByDni(guest.getDni());
         if (optionalGuest.isPresent()) {
             guest = optionalGuest.get();
@@ -36,17 +37,17 @@ public class GuestService {
     }
 
     public Optional<Guest> findOne(String id) {
-        log.debug("Request to find Guest : {}", id);
+        log.info("Request to find Guest : {}", id);
         return guestRepository.findById(id);
     }
 
     public List<Guest> findAll() {
-        log.debug("Request to find all Guest");
+        log.info("Request to find all Guest");
         return guestRepository.findAll();
     }
 
     public List<Guest> findAllMyGuests() {
-        log.debug("Request to find all Guest of currently logged user");
+        log.info("Request to find all Guest of currently logged user");
         String currentlyLoggedInUsername = new SecurityContextUserInfo().getUsername();
         return guestRepository.findByOwner(userRepository.findByUsername(currentlyLoggedInUsername).get());
     }

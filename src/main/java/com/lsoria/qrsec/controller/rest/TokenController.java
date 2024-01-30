@@ -36,9 +36,9 @@ public class TokenController {
     @Autowired
     UserService userService;
 
-    @GetMapping("${api.path.refresh}")
+    @GetMapping("${api.path.token.refresh}")
     public void refreshToken(HttpServletRequest request, HttpServletResponse response) throws IOException {
-        log.debug("REST request to refresh token");
+        log.info("REST request to refresh token");
         String authorizationHeader = request.getHeader(AUTHORIZATION);
         if (authorizationHeader != null && authorizationHeader.startsWith("Bearer ")) {
             try {
