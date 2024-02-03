@@ -1,18 +1,24 @@
 package com.lsoria.qrsec.controller.rest;
 
 import java.util.List;
+import java.util.Optional;
+import java.util.stream.Collectors;
 
+import com.lsoria.qrsec.domain.dto.InviteDTO;
+import com.lsoria.qrsec.domain.dto.mapper.InviteMapper;
 import com.lsoria.qrsec.domain.model.Invite;
 import com.lsoria.qrsec.service.InviteService;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.enums.ParameterIn;
+import io.swagger.v3.oas.annotations.media.ArraySchema;
 import io.swagger.v3.oas.annotations.media.Content;
-import io.swagger.v3.oas.annotations.parameters.RequestBody;
+import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.constraints.NotNull;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -20,8 +26,10 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -34,12 +42,21 @@ public class InviteController {
     @Autowired
     InviteService inviteService;
 
+    @Autowired
+    InviteMapper inviteMapper;
+
     @Operation(summary = "Get all Invites (privileged)", description = "Get all Invites from the neighbourhood")
     @GetMapping("/all/${api.path.invites}")
     @ApiResponses(value = {
             @ApiResponse(
                     responseCode = "200",
-                    description = "Invites successfully retrieved"
+                    description = "Invites successfully retrieved",
+                    content = @Content(
+                            mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            array = @ArraySchema(
+                                    schema = @Schema(implementation = InviteDTO.class)
+                            )
+                    )
             ),
             @ApiResponse(
                     responseCode = "204",
@@ -53,10 +70,11 @@ public class InviteController {
             )
     })
     // TODO: Add @PreAuthorize("hasAuthority('ADMIN')")
-    public ResponseEntity<List<Invite>> getInvites() {
+    public ResponseEntity<List<InviteDTO>> getInvites() {
 
-        log.info("REST request to get all Invite");
-        return ResponseEntity.ok(inviteService.findAll());
+        List<Invite> invites = inviteService.findAll();
+
+        return ResponseEntity.ok(invites.stream().map(inviteMapper::inviteToInviteDTO).collect(Collectors.toList()));
 
     }
 
@@ -65,7 +83,13 @@ public class InviteController {
     @ApiResponses(value = {
             @ApiResponse(
                     responseCode = "200",
-                    description = "Invites successfully retrieved"
+                    description = "Invites successfully retrieved",
+                    content = @Content(
+                            mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            array = @ArraySchema(
+                                    schema = @Schema(implementation = InviteDTO.class)
+                            )
+                    )
             ),
             @ApiResponse(
                     responseCode = "204",
@@ -79,19 +103,35 @@ public class InviteController {
             )
     })
     // TODO: Add @PreAuthorize("hasAuthority('OWNER')")
-    public ResponseEntity<List<Invite>> getCurrentOwnerGuests() {
+    public ResponseEntity<List<InviteDTO>> getCurrentOwnerGuests() {
 
-        log.info("REST request to get all Guest of currently logged user");
-        return ResponseEntity.ok(inviteService.findAll()); // TODO: Create corresponding method.findAllMyGuests());
+        List<Invite> invites = inviteService.findAll();
+
+        return ResponseEntity.ok(invites.stream().map(inviteMapper::inviteToInviteDTO).collect(Collectors.toList())); // TODO: Create corresponding method.findAllMyGuests());
 
     }
 
     @Operation(summary = "Get an Invite", description = "Get an specific Invite")
     @GetMapping("${api.path.invites}/{id}")
+    @Parameter(
+            name = "id",
+            description = "Invite uuid",
+            in = ParameterIn.PATH,
+            required = true,
+            schema = @Schema(
+                    type = "string",
+                    format = "uuid",
+                    example = "5f15a5256d2a2a1ac0e4d999"
+            )
+    )
     @ApiResponses(value = {
             @ApiResponse(
                     responseCode = "200",
-                    description = "Invite successfully updated"
+                    description = "Invite successfully updated",
+                    content = @Content(
+                            mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            schema = @Schema(implementation = InviteDTO.class)
+                    )
             ),
             @ApiResponse(
                     responseCode = "404",
@@ -104,21 +144,40 @@ public class InviteController {
                     content = @Content()
             )
     })
-    public ResponseEntity<Invite> getInvite(
-            @Parameter(description = "Invite ID", required = true, example = "5f15a5256d2a2a1ac0e4d999", in = ParameterIn.PATH) String id
+    public ResponseEntity<InviteDTO> getInvite(
+            @PathVariable @NotNull String id
     ) {
 
-        log.info("REST request to get Invite : {}", id);
-        return ResponseEntity.of(inviteService.findOne(id));
+        Optional<Invite> invite = inviteService.findOne(id);
+
+        if (invite.isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
+
+        InviteDTO inviteDTO = inviteMapper.inviteToInviteDTO(invite.get());
+
+        return ResponseEntity.ok(inviteDTO);
 
     }
 
     @Operation(summary = "Create an Invite", description = "Save an invite for later use")
     @PostMapping("${api.path.invites}")
+    @io.swagger.v3.oas.annotations.parameters.RequestBody(
+            description = "New Invite",
+            required = true,
+            content = @Content(
+                    mediaType = MediaType.APPLICATION_JSON_VALUE,
+                    schema = @Schema(implementation = InviteDTO.class)
+            )
+    )
     @ApiResponses(value = {
             @ApiResponse(
                     responseCode = "201",
-                    description = "Invite successfully created"
+                    description = "Invite successfully created",
+                    content = @Content(
+                            mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            schema = @Schema(implementation = InviteDTO.class)
+                    )
             ),
             @ApiResponse(
                     responseCode = "209",
@@ -131,21 +190,44 @@ public class InviteController {
                     content = @Content()
             )
     })
-    public ResponseEntity<Invite> createInvite(
-            @RequestBody(description = "New Invite", required = true) Invite invite
+    public ResponseEntity<InviteDTO> createInvite(
+            @RequestBody InviteDTO inviteDTO
     ) {
 
-        log.info("REST request to save Invite : {}", invite);
-        return ResponseEntity.status(HttpStatus.CREATED).body(inviteService.save(invite));
+        return ResponseEntity.status(HttpStatus.CREATED).body(inviteDTO);
+        // return ResponseEntity.status(HttpStatus.CREATED).body(inviteService.save(invite));
 
     }
 
     @Operation(summary = "Update an Invite", description = "Update invite's information")
     @PutMapping("${api.path.invites}/{id}")
+    @Parameter(
+            name = "id",
+            description = "Invite uuid",
+            in = ParameterIn.PATH,
+            required = true,
+            schema = @Schema(
+                    type = "string",
+                    format = "uuid",
+                    example = "5f15a5256d2a2a1ac0e4d999"
+            )
+    )
+    @io.swagger.v3.oas.annotations.parameters.RequestBody(
+            description = "Updated Invite",
+            required = true,
+            content = @Content(
+                    mediaType = MediaType.APPLICATION_JSON_VALUE,
+                    schema = @Schema(implementation = InviteDTO.class)
+            )
+    )
     @ApiResponses(value = {
             @ApiResponse(
                     responseCode = "200",
-                    description = "Invite successfully updated"
+                    description = "Invite successfully updated",
+                    content = @Content(
+                            mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            schema = @Schema(implementation = InviteDTO.class)
+                    )
             ),
             @ApiResponse(
                     responseCode = "404",
@@ -158,18 +240,29 @@ public class InviteController {
                     content = @Content()
             )
     })
-    public ResponseEntity<Invite> updateInvite(
-            @Parameter(description = "Invite ID", required = true, example = "5f15a5256d2a2a1ac0e4d999", in = ParameterIn.PATH) String id,
-            @RequestBody(description = "Updated Invite", required = true) Invite invite
+    public ResponseEntity<InviteDTO> updateInvite(
+            @PathVariable @NotNull String id,
+            @RequestBody @NotNull InviteDTO inviteDTO
     ) {
 
-        log.info("REST request to update Invite {}: {}", id, invite);
-        return ResponseEntity.ok(invite); // TODO: Use correct method
+        log.info("REST request to update Invite {}: {}", id, inviteDTO);
+        return ResponseEntity.ok(inviteDTO); // TODO: Use correct method
 
     }
 
     @Operation(summary = "Delete an Invite", description = "Delete or disable an Invite")
     @DeleteMapping("${api.path.invites}/{id}")
+    @Parameter(
+            name = "id",
+            description = "Invite uuid",
+            in = ParameterIn.PATH,
+            required = true,
+            schema = @Schema(
+                    type = "string",
+                    format = "uuid",
+                    example = "5f15a5256d2a2a1ac0e4d999"
+            )
+    )
     @ApiResponses(value = {
             @ApiResponse(
                     responseCode = "200",
@@ -193,7 +286,7 @@ public class InviteController {
             )
     })
     public void deleteInvite(
-            @Parameter(description = "Invite ID", required = true, example = "5f15a5256d2a2a1ac0e4d999", in = ParameterIn.PATH) String id
+            @PathVariable @NotNull String id
     ) {
 
         log.info("REST request to delete Invite {}", id); // TODO: Delete or disable Invite

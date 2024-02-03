@@ -13,6 +13,7 @@ import com.lsoria.qrsec.service.exception.ConflictException;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.enums.ParameterIn;
+import io.swagger.v3.oas.annotations.media.ArraySchema;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -50,7 +51,13 @@ public class UserController {
     @ApiResponses(value = {
             @ApiResponse(
                     responseCode = "200",
-                    description = "Users successfully retrieved"
+                    description = "Users successfully retrieved",
+                    content = @Content(
+                            mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            array = @ArraySchema(
+                                    schema = @Schema(implementation = UserDTO.class)
+                            )
+                    )
             ),
             @ApiResponse(
                     responseCode = "204",
@@ -74,11 +81,25 @@ public class UserController {
 
     @Operation(summary = "Get a User", description = "Get an specific User")
     @GetMapping("${api.path.users}/{id}")
-    @Parameter(description = "User ID", required = true, example = "5f15a5256d2a2a1ac0e4d999", in = ParameterIn.PATH)
+    @Parameter(
+            name = "id",
+            description = "User uuid",
+            in = ParameterIn.PATH,
+            required = true,
+            schema = @Schema(
+                    type = "string",
+                    format = "uuid",
+                    example = "5f15a5256d2a2a1ac0e4d999"
+            )
+    )
     @ApiResponses(value = {
             @ApiResponse(
                     responseCode = "200",
-                    description = "User successfully retrieved"
+                    description = "User successfully retrieved",
+                    content = @Content(
+                            mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            schema = @Schema(implementation = UserDTO.class)
+                    )
             ),
             @ApiResponse(
                     responseCode = "404",
@@ -92,7 +113,7 @@ public class UserController {
             )
     })
     public ResponseEntity<UserDTO> getUser(
-            @PathVariable String id
+            @PathVariable @NotNull String id
     ) {
 
         Optional<User> user = userService.findOne(id);
@@ -109,10 +130,22 @@ public class UserController {
 
     @Operation(summary = "Create a User", description = "Save a user for later use on an invite")
     @PostMapping("${api.path.users}")
+    @io.swagger.v3.oas.annotations.parameters.RequestBody(
+            description = "New User",
+            required = true,
+            content = @Content(
+                    mediaType = MediaType.APPLICATION_JSON_VALUE,
+                    schema = @Schema(implementation = UserDTO.class)
+            )
+    )
     @ApiResponses(value = {
             @ApiResponse(
                     responseCode = "201",
-                    description = "User successfully created"
+                    description = "User successfully created",
+                    content = @Content(
+                            mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            schema = @Schema(implementation = UserDTO.class)
+                    )
             ),
             @ApiResponse(
                     responseCode = "209",
@@ -126,11 +159,13 @@ public class UserController {
             )
     })
     public ResponseEntity<UserDTO> createUser(
-            @io.swagger.v3.oas.annotations.parameters.RequestBody(description = "New User", required = true, content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE, schema = @Schema(implementation = UserDTO.class))) @RequestBody @NotNull UserDTO user
+            @RequestBody @NotNull UserDTO userDTO
     ) {
 
+        // TODO: Make id null
+
         try {
-            User createdUser = userService.save(userMapper.userDTOToUser(user));
+            User createdUser = userService.save(userMapper.userDTOToUser(userDTO));
 
             return ResponseEntity.ok(userMapper.userToUserDTO(createdUser));
         } catch (ConflictException conflictException) {
@@ -138,7 +173,7 @@ public class UserController {
 
             return ResponseEntity.status(HttpStatus.CONFLICT).build();
         } catch (Exception exception) {
-            log.error("Couldn't create USER {}.\nMessage: {}.\nStackTrace:\n{}", user, exception.getMessage(), exception.getStackTrace());
+            log.error("Couldn't create USER {}.\nMessage: {}.\nStackTrace:\n{}", userDTO, exception.getMessage(), exception.getStackTrace());
         }
 
         return ResponseEntity.internalServerError().build();
@@ -147,10 +182,33 @@ public class UserController {
 
     @Operation(summary = "Update a User", description = "Update user's information")
     @PutMapping("${api.path.users}/{id}")
+    @Parameter(
+            name = "id",
+            description = "User uuid",
+            in = ParameterIn.PATH,
+            required = true,
+            schema = @Schema(
+                    type = "string",
+                    format = "uuid",
+                    example = "5f15a5256d2a2a1ac0e4d999"
+            )
+    )
+    @io.swagger.v3.oas.annotations.parameters.RequestBody(
+            description = "Updated User",
+            required = true,
+            content = @Content(
+                    mediaType = MediaType.APPLICATION_JSON_VALUE,
+                    schema = @Schema(implementation = UserDTO.class)
+            )
+    )
     @ApiResponses(value = {
             @ApiResponse(
                     responseCode = "200",
-                    description = "User successfully updated"
+                    description = "User successfully updated",
+                    content = @Content(
+                            mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            schema = @Schema(implementation = UserDTO.class)
+                    )
             ),
             @ApiResponse(
                     responseCode = "404",
@@ -163,18 +221,31 @@ public class UserController {
                     content = @Content()
             )
     })
-    public ResponseEntity<User> updateUser(
-            @Parameter(description = "User ID", required = true, example = "5f15a5256d2a2a1ac0e4d999", in = ParameterIn.PATH) @PathVariable String id,
-            @io.swagger.v3.oas.annotations.parameters.RequestBody(description = "Updated User", required = true, content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE, schema = @Schema(implementation = User.class))) @RequestBody @NotNull User user
+    public ResponseEntity<UserDTO> updateUser(
+            @PathVariable @NotNull String id,
+            @RequestBody @NotNull UserDTO userDTO
     ) {
 
-        log.info("REST request to update User {}: {}", id, user);
-        return ResponseEntity.ok(user); // TODO: Use correct method
+        // TODO: Use Path id and replace in body after search
+
+        log.info("REST request to update User {}: {}", id, userDTO);
+        return ResponseEntity.ok(userDTO); // TODO: Use correct method
 
     }
 
     @Operation(summary = "Delete a User", description = "Delete a User")
     @DeleteMapping("${api.path.users}/{id}")
+    @Parameter(
+            name = "id",
+            description = "User uuid",
+            in = ParameterIn.PATH,
+            required = true,
+            schema = @Schema(
+                    type = "string",
+                    format = "uuid",
+                    example = "5f15a5256d2a2a1ac0e4d999"
+            )
+    )
     @ApiResponses(value = {
             @ApiResponse(
                     responseCode = "204",
@@ -193,7 +264,7 @@ public class UserController {
             )
     })
     public void deleteGuest(
-            @Parameter(description = "User ID", required = true, example = "5f15a5256d2a2a1ac0e4d999", in = ParameterIn.PATH) String id
+            @PathVariable @NotNull String id
     ) {
 
         log.info("REST request to delete User {}", id); // TODO: Delete User
