@@ -9,6 +9,7 @@ import com.lsoria.qrsec.domain.dto.mapper.UserMapper;
 import com.lsoria.qrsec.domain.model.User;
 import com.lsoria.qrsec.service.UserService;
 import com.lsoria.qrsec.service.exception.ConflictException;
+import com.lsoria.qrsec.service.exception.NotFoundException;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -79,7 +80,7 @@ public class UserController {
 
     }
 
-    @Operation(summary = "Get a User", description = "Get an specific User")
+    @Operation(summary = "Get a User (privileged)", description = "Get an specific User")
     @GetMapping("${api.path.users}/{id}")
     @Parameter(
             name = "id",
@@ -112,6 +113,7 @@ public class UserController {
                     content = @Content()
             )
     })
+    // TODO: Add @PreAuthorize("hasAuthority('ADMIN')")
     public ResponseEntity<UserDTO> getUser(
             @PathVariable @NotNull String id
     ) {
@@ -162,18 +164,26 @@ public class UserController {
             @RequestBody @NotNull UserDTO userDTO
     ) {
 
-        // TODO: Make id null
+        User userToCreate = userMapper.userDTOToUser(userDTO);
+        userToCreate.setId("");
+        userToCreate.setEnabled(false);
 
         try {
-            User createdUser = userService.save(userMapper.userDTOToUser(userDTO));
 
-            return ResponseEntity.ok(userMapper.userToUserDTO(createdUser));
+            User createdUser = userService.save(userToCreate);
+
+            return ResponseEntity.status(HttpStatus.CREATED).body(userMapper.userToUserDTO(createdUser));
+
         } catch (ConflictException conflictException) {
+
             log.error("Couldn't create USER.\nMessage: {}.", conflictException.getMessage());
 
             return ResponseEntity.status(HttpStatus.CONFLICT).build();
+
         } catch (Exception exception) {
-            log.error("Couldn't create USER {}.\nMessage: {}.\nStackTrace:\n{}", userDTO, exception.getMessage(), exception.getStackTrace());
+
+            log.error("Couldn't create USER with values:\n{}\nMessage: {}.\nStackTrace:\n{}", userDTO, exception.getMessage(), exception.getStackTrace());
+
         }
 
         return ResponseEntity.internalServerError().build();
@@ -226,14 +236,32 @@ public class UserController {
             @RequestBody @NotNull UserDTO userDTO
     ) {
 
-        // TODO: Use Path id and replace in body after search
+        Optional<User> foundUser = userService.findOne(id);
 
-        log.info("REST request to update User {}: {}", id, userDTO);
-        return ResponseEntity.ok(userDTO); // TODO: Use correct method
+        if (foundUser.isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
+
+        User userToUpdate = foundUser.get();
+        User userNewValues = userMapper.userDTOToUser(userDTO);
+
+        try {
+
+            User updatedUser = userService.update(userToUpdate, userNewValues);
+
+            return ResponseEntity.ok(userMapper.userToUserDTO(updatedUser));
+
+        } catch (Exception exception) {
+
+            log.error("Couldn't update USER with values:\n{}\nMessage: {}.\nStackTrace:\n{}", userDTO, exception.getMessage(), exception.getStackTrace());
+
+        }
+
+        return ResponseEntity.internalServerError().build();
 
     }
 
-    @Operation(summary = "Delete a User", description = "Delete a User")
+    @Operation(summary = "Delete a User", description = "The user will no longer be available in the database")
     @DeleteMapping("${api.path.users}/{id}")
     @Parameter(
             name = "id",
@@ -263,11 +291,27 @@ public class UserController {
                     content = @Content()
             )
     })
-    public void deleteGuest(
+    public ResponseEntity<User> deleteGuest(
             @PathVariable @NotNull String id
     ) {
 
-        log.info("REST request to delete User {}", id); // TODO: Delete User
+        try {
+
+            userService.delete(id);
+
+            return ResponseEntity.noContent().build();
+
+        } catch (NotFoundException exception) {
+
+            return ResponseEntity.notFound().build();
+
+        } catch (Exception exception) {
+
+            log.error("Couldn't delete USER {}.\nMessage: {}.\nStackTrace:\n{}", id, exception.getMessage(), exception.getStackTrace());
+
+        }
+
+        return ResponseEntity.internalServerError().build();
 
     }
 

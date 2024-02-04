@@ -26,6 +26,7 @@ public class UserDTO {
     private String dni;
     private Address address;
     private String phone;
+    @Schema(accessMode = Schema.AccessMode.READ_ONLY)
     private Boolean enabled = false;
 
 }
