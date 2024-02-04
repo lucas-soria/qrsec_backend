@@ -28,6 +28,7 @@ dependencies {
     testImplementation 'org.springframework.boot:spring-boot-starter-test:3.2.2'
 
     implementation 'org.springframework.boot:spring-boot-starter-data-mongodb:3.2.2'
+
     implementation 'org.springframework.boot:spring-boot-starter-data-rest:3.2.2'
 
     implementation 'org.springframework.boot:spring-boot-starter-security:3.2.2'

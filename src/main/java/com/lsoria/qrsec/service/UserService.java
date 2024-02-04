@@ -79,9 +79,7 @@ public class UserService {
         oldUser.setPhone(updatedUser.getPhone());
         oldUser.setUsername(updatedUser.getUsername());
 
-        userRepository.save(oldUser);
-
-        return new User();
+        return userRepository.save(oldUser);
 
     }
 

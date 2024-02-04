@@ -4,10 +4,10 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
-import com.lsoria.qrsec.domain.dto.UserDTO;
-import com.lsoria.qrsec.domain.dto.mapper.UserMapper;
-import com.lsoria.qrsec.domain.model.User;
-import com.lsoria.qrsec.service.UserService;
+import com.lsoria.qrsec.domain.dto.AddressDTO;
+import com.lsoria.qrsec.domain.dto.mapper.AddressMapper;
+import com.lsoria.qrsec.domain.model.Address;
+import com.lsoria.qrsec.service.AddressService;
 import com.lsoria.qrsec.service.exception.ConflictException;
 import com.lsoria.qrsec.service.exception.NotFoundException;
 
@@ -37,54 +37,54 @@ import org.springframework.web.bind.annotation.RestController;
 
 @Slf4j
 @RestController
-@Tag(name = "User controller", description = "CRUD of users")
+@Tag(name = "Address controller", description = "CRUD of addresses")
 @RequestMapping(path = "${api.path}", produces = MediaType.APPLICATION_JSON_VALUE)
-public class UserController {
+public class AddressController {
 
     @Autowired
-    UserService userService;
+    AddressService addressService;
 
     @Autowired
-    UserMapper userMapper;
+    AddressMapper addressMapper;
 
-    @Operation(summary = "Get all Users (privileged)", description = "Get all Users from the neighbourhood")
-    @GetMapping("${api.path.users}")
+    @Operation(summary = "Get all Addresses (privileged)", description = "Get all Addresses from the neighbourhood")
+    @GetMapping("${api.path.addresses}")
     @ApiResponses(value = {
             @ApiResponse(
                     responseCode = "200",
-                    description = "Users successfully retrieved",
+                    description = "Addresses successfully retrieved",
                     content = @Content(
                             mediaType = MediaType.APPLICATION_JSON_VALUE,
                             array = @ArraySchema(
-                                    schema = @Schema(implementation = UserDTO.class)
+                                    schema = @Schema(implementation = AddressDTO.class)
                             )
                     )
             ),
             @ApiResponse(
                     responseCode = "204",
-                    description = "The neighbourhood has no Users",
+                    description = "The neighbourhood has no Addresses",
                     content = @Content()
             ),
             @ApiResponse(
                     responseCode = "500",
-                    description = "Some error prevented the Users from being retrieved",
+                    description = "Some error prevented the Addresses from being retrieved",
                     content = @Content()
             )
     })
     // TODO: Add @PreAuthorize("hasAuthority('ADMIN')")
-    public ResponseEntity<List<UserDTO>> getUsers() {
+    public ResponseEntity<List<AddressDTO>> getAddresses() {
 
-        List<User> users = userService.findAll();
+        List<Address> addresses = addressService.findAll();
 
-        return ResponseEntity.ok(users.stream().map(userMapper::userToUserDTO).collect(Collectors.toList()));
+        return ResponseEntity.ok(addresses.stream().map(addressMapper::addressToAddressDTO).collect(Collectors.toList()));
 
     }
 
-    @Operation(summary = "Get a User (privileged)", description = "Get an specific User")
-    @GetMapping("${api.path.users}/{id}")
+    @Operation(summary = "Get an Address (privileged)", description = "Get an specific Address")
+    @GetMapping("${api.path.addresses}/{id}")
     @Parameter(
             name = "id",
-            description = "User uuid",
+            description = "Address uuid",
             in = ParameterIn.PATH,
             required = true,
             schema = @Schema(
@@ -96,93 +96,92 @@ public class UserController {
     @ApiResponses(value = {
             @ApiResponse(
                     responseCode = "200",
-                    description = "User successfully retrieved",
+                    description = "Address successfully retrieved",
                     content = @Content(
                             mediaType = MediaType.APPLICATION_JSON_VALUE,
-                            schema = @Schema(implementation = UserDTO.class)
+                            schema = @Schema(implementation = AddressDTO.class)
                     )
             ),
             @ApiResponse(
                     responseCode = "404",
-                    description = "User not found",
+                    description = "Address not found",
                     content = @Content()
             ),
             @ApiResponse(
                     responseCode = "500",
-                    description = "Some error prevented the User from being retrieved",
+                    description = "Some error prevented the Address from being retrieved",
                     content = @Content()
             )
     })
     // TODO: Add @PreAuthorize("hasAuthority('ADMIN')")
-    public ResponseEntity<UserDTO> getUser(
+    public ResponseEntity<AddressDTO> getAddress(
             @PathVariable @NotNull String id
     ) {
 
-        Optional<User> user = userService.findOne(id);
+        Optional<Address> address = addressService.findOne(id);
 
-        if (user.isEmpty()) {
+        if (address.isEmpty()) {
             return ResponseEntity.notFound().build();
         }
 
-        UserDTO userDTO = userMapper.userToUserDTO(user.get());
+        AddressDTO addressDTO = addressMapper.addressToAddressDTO(address.get());
 
-        return ResponseEntity.ok(userDTO);
+        return ResponseEntity.ok(addressDTO);
 
     }
 
-    @Operation(summary = "Create a User", description = "Save a user for later use on an invite")
-    @PostMapping("${api.path.users}")
+    @Operation(summary = "Create an Address", description = "Save an Address for later use on a User")
+    @PostMapping("${api.path.addresses}")
     @io.swagger.v3.oas.annotations.parameters.RequestBody(
-            description = "New User",
+            description = "New Address",
             required = true,
             content = @Content(
                     mediaType = MediaType.APPLICATION_JSON_VALUE,
-                    schema = @Schema(implementation = UserDTO.class)
+                    schema = @Schema(implementation = AddressDTO.class)
             )
     )
     @ApiResponses(value = {
             @ApiResponse(
                     responseCode = "201",
-                    description = "User successfully created",
+                    description = "Address successfully created",
                     content = @Content(
                             mediaType = MediaType.APPLICATION_JSON_VALUE,
-                            schema = @Schema(implementation = UserDTO.class)
+                            schema = @Schema(implementation = AddressDTO.class)
                     )
             ),
             @ApiResponse(
                     responseCode = "209",
-                    description = "User already existed",
+                    description = "Address already existed",
                     content = @Content()
             ),
             @ApiResponse(
                     responseCode = "500",
-                    description = "Some error prevented the User from being created",
+                    description = "Some error prevented the Address from being created",
                     content = @Content()
             )
     })
-    public ResponseEntity<UserDTO> createUser(
-            @RequestBody @NotNull UserDTO userDTO
+    public ResponseEntity<AddressDTO> createAddress(
+            @RequestBody @NotNull AddressDTO addressDTO
     ) {
 
-        User userToCreate = userMapper.userDTOToUser(userDTO);
-        userToCreate.setId("");
-        userToCreate.setEnabled(false);
+        Address addressToCreate = addressMapper.addressDTOToAddress(addressDTO);
+        addressToCreate.setId("");
 
         try {
 
-            User createdUser = userService.save(userToCreate);
+            Address createdAddress = addressService.save(addressToCreate);
 
-            return ResponseEntity.status(HttpStatus.CREATED).body(userMapper.userToUserDTO(createdUser));
+            return ResponseEntity.status(HttpStatus.CREATED).body(addressMapper.addressToAddressDTO(createdAddress));
 
         } catch (ConflictException conflictException) {
 
-            log.error("Couldn't create USER.\nMessage: {}.", conflictException.getMessage());
+            log.error("Couldn't create ADDRESS.\nMessage: {}.", conflictException.getMessage());
 
             return ResponseEntity.status(HttpStatus.CONFLICT).build();
 
         } catch (Exception exception) {
 
-            log.error("Couldn't create USER with values:\n{}\nMessage: {}.\nStackTrace:\n{}", userDTO, exception.getMessage(), exception.getStackTrace());
+            log.error("Couldn't create ADDRESS with values:\n{}\nMessage: {}.\nStackTrace:\n{}", addressDTO, exception.getMessage(), exception.getStackTrace());
 
         }
 
@@ -190,11 +189,11 @@ public class UserController {
 
     }
 
-    @Operation(summary = "Update a User", description = "Update user's information")
-    @PutMapping("${api.path.users}/{id}")
+    @Operation(summary = "Update an Address", description = "Update address's information")
+    @PutMapping("${api.path.addresses}/{id}")
     @Parameter(
             name = "id",
-            description = "User uuid",
+            description = "Address uuid",
             in = ParameterIn.PATH,
             required = true,
             schema = @Schema(
@@ -204,56 +203,56 @@ public class UserController {
             )
     )
     @io.swagger.v3.oas.annotations.parameters.RequestBody(
-            description = "Updated User",
+            description = "Updated Address",
             required = true,
             content = @Content(
                     mediaType = MediaType.APPLICATION_JSON_VALUE,
-                    schema = @Schema(implementation = UserDTO.class)
+                    schema = @Schema(implementation = AddressDTO.class)
             )
     )
     @ApiResponses(value = {
             @ApiResponse(
                     responseCode = "200",
-                    description = "User successfully updated",
+                    description = "Address successfully updated",
                     content = @Content(
                             mediaType = MediaType.APPLICATION_JSON_VALUE,
-                            schema = @Schema(implementation = UserDTO.class)
+                            schema = @Schema(implementation = AddressDTO.class)
                     )
             ),
             @ApiResponse(
                     responseCode = "404",
-                    description = "User not found",
+                    description = "Address not found",
                     content = @Content()
             ),
             @ApiResponse(
                     responseCode = "500",
-                    description = "Some error prevented the User from being updated",
+                    description = "Some error prevented the Address from being updated",
                     content = @Content()
             )
     })
-    public ResponseEntity<UserDTO> updateUser(
+    public ResponseEntity<AddressDTO> updateAddress(
             @PathVariable @NotNull String id,
-            @RequestBody @NotNull UserDTO userDTO
+            @RequestBody @NotNull AddressDTO addressDTO
     ) {
 
-        Optional<User> foundUser = userService.findOne(id);
+        Optional<Address> foundAddress = addressService.findOne(id);
 
-        if (foundUser.isEmpty()) {
+        if (foundAddress.isEmpty()) {
             return ResponseEntity.notFound().build();
         }
 
-        User userToUpdate = foundUser.get();
-        User userNewValues = userMapper.userDTOToUser(userDTO);
+        Address addressToUpdate = foundAddress.get();
+        Address addressNewValues = addressMapper.addressDTOToAddress(addressDTO);
 
         try {
 
-            User updatedUser = userService.update(userToUpdate, userNewValues);
+            Address updatedAddress = addressService.update(addressToUpdate, addressNewValues);
 
-            return ResponseEntity.ok(userMapper.userToUserDTO(updatedUser));
+            return ResponseEntity.ok(addressMapper.addressToAddressDTO(updatedAddress));
 
         } catch (Exception exception) {
 
-            log.error("Couldn't update USER with values:\n{}\nMessage: {}.\nStackTrace:\n{}", userDTO, exception.getMessage(), exception.getStackTrace());
+            log.error("Couldn't update ADDRESS with values:\n{}\nMessage: {}.\nStackTrace:\n{}", addressDTO, exception.getMessage(), exception.getStackTrace());
 
         }
 
@@ -261,11 +260,11 @@ public class UserController {
 
     }
 
-    @Operation(summary = "Delete a User", description = "The user will no longer be available in the database")
-    @DeleteMapping("${api.path.users}/{id}")
+    @Operation(summary = "Delete an Address", description = "The Address will no longer be available in the database")
+    @DeleteMapping("${api.path.addresses}/{id}")
     @Parameter(
             name = "id",
-            description = "User uuid",
+            description = "Address uuid",
             in = ParameterIn.PATH,
             required = true,
             schema = @Schema(
@@ -277,27 +276,27 @@ public class UserController {
     @ApiResponses(value = {
             @ApiResponse(
                     responseCode = "204",
-                    description = "User successfully deleted",
+                    description = "Address successfully deleted",
                     content = @Content()
             ),
             @ApiResponse(
                     responseCode = "404",
-                    description = "User not found",
+                    description = "Address not found",
                     content = @Content()
             ),
             @ApiResponse(
                     responseCode = "500",
-                    description = "Some error prevented the User from being deleted or the Owner from being removed", // TODO: Remove all references of the user from Guests
+                    description = "Some error prevented the Address from being deleted",
                     content = @Content()
             )
     })
-    public ResponseEntity<UserDTO> deleteUser(
+    public ResponseEntity<AddressDTO> deleteAddress(
             @PathVariable @NotNull String id
     ) {
 
         try {
 
-            userService.delete(id);
+            addressService.delete(id);
 
             return ResponseEntity.noContent().build();
 
@@ -307,7 +306,7 @@ public class UserController {
 
         } catch (Exception exception) {
 
-            log.error("Couldn't delete USER {}.\nMessage: {}.\nStackTrace:\n{}", id, exception.getMessage(), exception.getStackTrace());
+            log.error("Couldn't delete ADDRESS {}.\nMessage: {}.\nStackTrace:\n{}", id, exception.getMessage(), exception.getStackTrace());
 
         }
 
