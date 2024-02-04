@@ -7,7 +7,12 @@ import java.util.stream.Collectors;
 import com.lsoria.qrsec.domain.dto.GuestDTO;
 import com.lsoria.qrsec.domain.dto.mapper.GuestMapper;
 import com.lsoria.qrsec.domain.model.Guest;
+import com.lsoria.qrsec.domain.model.Role;
+import com.lsoria.qrsec.domain.model.User;
 import com.lsoria.qrsec.service.GuestService;
+import com.lsoria.qrsec.service.UserService;
+import com.lsoria.qrsec.service.exception.NotFoundException;
+import com.lsoria.qrsec.service.exception.UnauthorizedException;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -30,6 +35,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -43,10 +49,23 @@ public class GuestController {
     GuestService guestService;
 
     @Autowired
+    UserService userService;
+
+    @Autowired
     GuestMapper guestMapper;
 
     @Operation(summary = "Get all Guests (privileged)", description = "Get all Guests from the neighbourhood")
     @GetMapping("/all/${api.path.guests}")
+    @Parameter(
+            name = "X-Email",
+            description = "Email of the Owner that wants to add the Guest",
+            in = ParameterIn.HEADER,
+            required = true,
+            schema = @Schema(
+                    type = "string",
+                    example = "exa@mple.com"
+            )
+    )
     @ApiResponses(value = {
             @ApiResponse(
                     responseCode = "200",
@@ -64,22 +83,66 @@ public class GuestController {
                     content = @Content()
             ),
             @ApiResponse(
+                    responseCode = "404",
+                    description = "User not found on the database",
+                    content = @Content()
+            ),
+            @ApiResponse(
                     responseCode = "500",
                     description = "Some error prevented the Guests from being retrieved",
                     content = @Content()
             )
     })
     // TODO: Add @PreAuthorize("hasAuthority('ADMIN')")
-    public ResponseEntity<List<GuestDTO>> getGuests() {
+    public ResponseEntity<List<GuestDTO>> getGuests(
+            @RequestHeader(value = "X-Email") @NotNull String email
+    ) {
 
-        List<Guest> guests = guestService.findAll();
+        try {
 
-        return ResponseEntity.ok(guests.stream().map(guestMapper::guestToGuestDTO).collect(Collectors.toList()));
+            List<Guest> guests = guestService.findAll(email, new Role(Role.ADMIN));
+            if (guests.isEmpty()) {
+
+                return ResponseEntity.noContent().build();
+
+            }
+
+            return ResponseEntity.ok(guests.stream().map(guestMapper::guestToGuestDTO).collect(Collectors.toList()));
+
+        } catch (NotFoundException exception) {
+
+            log.error("User not found");
+
+            return ResponseEntity.notFound().build();
+
+        } catch (UnauthorizedException exception) {
+
+            log.error("User is not authorized to Use this endpoint");
+
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+
+        } catch (Exception exception) {
+
+            log.error("Couldn't find all the Guests.\nMessage: {}.\nStackTrace:\n{}", exception.getMessage(), exception.getStackTrace());
+
+        }
+
+        return ResponseEntity.internalServerError().build();
 
     }
 
     @Operation(summary = "Get all Guests", description = "Get all Guests registered for the current Owner")
     @GetMapping("${api.path.guests}")
+    @Parameter(
+            name = "X-Email",
+            description = "Email of the Owner that wants to add the Guest",
+            in = ParameterIn.HEADER,
+            required = true,
+            schema = @Schema(
+                    type = "string",
+                    example = "exa@mple.com"
+            )
+    )
     @ApiResponses(value = {
             @ApiResponse(
                     responseCode = "200",
@@ -97,22 +160,67 @@ public class GuestController {
                     content = @Content()
             ),
             @ApiResponse(
+                    responseCode = "404",
+                    description = "User not found on the database",
+                    content = @Content()
+            ),
+            @ApiResponse(
                     responseCode = "500",
                     description = "Some error prevented the Guests from being retrieved",
                     content = @Content()
             )
     })
     // TODO: Add @PreAuthorize("hasAuthority('OWNER')")
-    public ResponseEntity<List<GuestDTO>> getCurrentOwnerGuests() {
+    public ResponseEntity<List<GuestDTO>> getCurrentOwnerGuests(
+            @RequestHeader(value = "X-Email") @NotNull String email
+    ) {
 
-        List<Guest> guests = guestService.findAllMyGuests();
+        try {
 
-        return ResponseEntity.ok(guests.stream().map(guestMapper::guestToGuestDTO).collect(Collectors.toList()));
+            List<Guest> guests = guestService.findAllMyGuests(email, new Role(Role.OWNER));
+            if (guests.isEmpty()) {
+
+                return ResponseEntity.noContent().build();
+
+            }
+
+            return ResponseEntity.ok(guests.stream().map(guestMapper::guestToGuestDTO).collect(Collectors.toList()));
+
+        } catch (NotFoundException exception) {
+
+            log.error("User not found");
+
+            return ResponseEntity.notFound().build();
+
+        } catch (UnauthorizedException exception) {
+
+            log.error("User is not authorized to Use this endpoint");
+
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+
+        } catch (Exception exception) {
+
+            log.error("Couldn't find all the Guests.\nMessage: {}.\nStackTrace:\n{}", exception.getMessage(), exception.getStackTrace());
+
+        }
+
+        return ResponseEntity.internalServerError().build();
+
 
     }
 
     @Operation(summary = "Get a Guest", description = "Get an specific Guest")
     @GetMapping("${api.path.guests}/{id}")
+    @Parameter(
+            name = "X-Email",
+            description = "Email of the Owner that wants to add the Guest",
+            in = ParameterIn.HEADER,
+            required = true,
+            schema = @Schema(
+                    type = "string",
+                    example = "exa@mple.com"
+            )
+    )
     @Parameter(
             name = "id",
             description = "Guest uuid",
@@ -145,13 +253,26 @@ public class GuestController {
             )
     })
     public ResponseEntity<GuestDTO> getGuest(
+            @RequestHeader(value = "X-Email") @NotNull String email,
             @PathVariable @NotNull String id
     ) {
 
-        Optional<Guest> guest = guestService.findOne(id);
+        Optional<User> currentUser = userService.findByUsername(email);
+        if (currentUser.isEmpty()) {
 
-        if (guest.isEmpty()) {
             return ResponseEntity.notFound().build();
+
+        }
+        Optional<Guest> guest = guestService.findOne(id);
+        if (guest.isEmpty()) {
+
+            return ResponseEntity.notFound().build();
+
+        }
+        if (currentUser.get().getAuthorities().contains(new Role(Role.OWNER)) && !guest.get().getOwner().contains(currentUser.get())) {
+
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+
         }
 
         GuestDTO guestDTO = guestMapper.guestToGuestDTO(guest.get());
@@ -162,6 +283,16 @@ public class GuestController {
 
     @Operation(summary = "Create a Guest", description = "Save a guest for later use on an invite")
     @PostMapping("${api.path.guests}")
+    @Parameter(
+            name = "X-Email",
+            description = "Email of the Owner that wants to add the Guest",
+            in = ParameterIn.HEADER,
+            required = true,
+            schema = @Schema(
+                    type = "string",
+                    example = "exa@mple.com"
+            )
+    )
     @io.swagger.v3.oas.annotations.parameters.RequestBody(
             description = "New Guest",
             required = true,
@@ -180,28 +311,60 @@ public class GuestController {
                     )
             ),
             @ApiResponse(
-                    responseCode = "209",
-                    description = "Guest already existed",
-                    content = @Content()
-            ),
-            @ApiResponse(
                     responseCode = "500",
                     description = "Some error prevented the Guest from being created",
                     content = @Content()
             )
     })
+    // TODO: Add @PreAuthorize("hasAuthority('OWNER')")
     public ResponseEntity<GuestDTO> createGuest(
+            @RequestHeader(value = "X-Email") @NotNull String email,
             @RequestBody @NotNull GuestDTO guestDTO
     ) {
 
-        log.info("REST request to save Guest : {}", guestDTO);
-        // return ResponseEntity.status(HttpStatus.CREATED).body(guestService.save(guest));
-        return ResponseEntity.status(HttpStatus.CREATED).body(guestDTO);
+        try {
+
+            if (!userService.userIsAuthorized(email, new Role(Role.OWNER))) {
+
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+
+            }
+
+            Guest newGuest = guestMapper.guestDTOToGuest(guestDTO);
+            newGuest.setId(null);
+
+            Guest createdGuest = guestService.save(newGuest, email);
+
+            return ResponseEntity.status(HttpStatus.CREATED).body(guestMapper.guestToGuestDTO(createdGuest));
+
+        } catch (NotFoundException exception) {
+
+            log.error("User {} not found", email);
+
+            return ResponseEntity.notFound().build();
+
+        } catch (Exception exception) {
+
+            log.error("Couldn't create Guest with values:\n{}\nMessage: {}.\nStackTrace:\n{}", guestDTO, exception.getMessage(), exception.getStackTrace());
+
+        }
+
+        return ResponseEntity.internalServerError().build();
 
     }
 
-    @Operation(summary = "Update a Guest", description = "Update guest's information")
+    @Operation(summary = "Update a Guest (privileged)", description = "Update guest's information")
     @PutMapping("${api.path.guests}/{id}")
+    @Parameter(
+            name = "X-Email",
+            description = "Email of the Owner that wants to add the Guest",
+            in = ParameterIn.HEADER,
+            required = true,
+            schema = @Schema(
+                    type = "string",
+                    example = "exa@mple.com"
+            )
+    )
     @Parameter(
             name = "id",
             description = "Guest uuid",
@@ -241,7 +404,9 @@ public class GuestController {
                     content = @Content()
             )
     })
+    // TODO: Add @PreAuthorize("hasAuthority('ADMIN')")
     public ResponseEntity<GuestDTO> updateGuest(
+            @RequestHeader(value = "X-Email") @NotNull String email,
             @PathVariable @NotNull String id,
             @RequestBody @NotNull GuestDTO guestDTO
     ) {
@@ -253,6 +418,16 @@ public class GuestController {
 
     @Operation(summary = "Delete a Guest", description = "Delete an Owner from the Guest list or the Guest if it was the last Owner")
     @DeleteMapping("${api.path.guests}/{id}")
+    @Parameter(
+            name = "X-Email",
+            description = "Email of the Owner that wants to add the Guest",
+            in = ParameterIn.HEADER,
+            required = true,
+            schema = @Schema(
+                    type = "string",
+                    example = "exa@mple.com"
+            )
+    )
     @Parameter(
             name = "id",
             description = "Guest uuid",
@@ -281,7 +456,9 @@ public class GuestController {
                     content = @Content()
             )
     })
+    // TODO: Add @PreAuthorize("hasAuthority('OWNER || ADMIN')")
     public void deleteGuest(
+            @RequestHeader(value = "X-Email") @NotNull String email,
             @PathVariable @NotNull String id
     ) {
 

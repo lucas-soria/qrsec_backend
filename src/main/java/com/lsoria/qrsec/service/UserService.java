@@ -3,6 +3,7 @@ package com.lsoria.qrsec.service;
 import java.util.List;
 import java.util.Optional;
 
+import com.lsoria.qrsec.domain.model.Role;
 import com.lsoria.qrsec.domain.model.User;
 import com.lsoria.qrsec.repository.UserRepository;
 import com.lsoria.qrsec.service.exception.ConflictException;
@@ -92,6 +93,18 @@ public class UserService {
         }
 
         userRepository.deleteById(id);
+
+    }
+
+    public boolean userIsAuthorized(String username, Role role) throws Exception {
+
+        Optional<User> currentUser = this.findByUsername(username);
+        if (currentUser.isEmpty()) {
+            throw new NotFoundException("User not found");
+        }
+        User user = currentUser.get();
+
+        return user.getAuthorities().contains(role);
 
     }
 

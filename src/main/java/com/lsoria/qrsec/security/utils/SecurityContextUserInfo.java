@@ -10,6 +10,7 @@ public class SecurityContextUserInfo {
     private Authentication authentication;
 
     /*
+        this.authentication.getPrincipal() -> UserDetails || User -> (User)principal
         Get the password of the authenticated user: getCredentials()
         Get the assigned roles of the authenticated user: getAuthorities()
         Get further details of the authenticated user: getDetails()
