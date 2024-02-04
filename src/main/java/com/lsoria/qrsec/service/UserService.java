@@ -75,7 +75,7 @@ public class UserService {
         oldUser.setEnabled(updatedUser.getEnabled());
         oldUser.setFirstName(updatedUser.getFirstName());
         oldUser.setLastName(updatedUser.getLastName());
-        oldUser.setPassword(updatedUser.getPassword());
+        oldUser.setPassword(passwordEncoder.encode(updatedUser.getPassword()));
         oldUser.setPhone(updatedUser.getPhone());
         oldUser.setUsername(updatedUser.getUsername());
 

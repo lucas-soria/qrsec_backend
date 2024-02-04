@@ -165,7 +165,7 @@ public class UserController {
     ) {
 
         User userToCreate = userMapper.userDTOToUser(userDTO);
-        userToCreate.setId("");
+        userToCreate.setId(null);
         userToCreate.setEnabled(false);
 
         try {

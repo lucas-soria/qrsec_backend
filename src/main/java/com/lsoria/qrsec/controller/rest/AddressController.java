@@ -165,7 +165,7 @@ public class AddressController {
     ) {
 
         Address addressToCreate = addressMapper.addressDTOToAddress(addressDTO);
-        addressToCreate.setId("");
+        addressToCreate.setId(null);
 
         try {
 
