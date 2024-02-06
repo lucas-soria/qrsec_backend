@@ -21,6 +21,6 @@ public class GuestDTO {
     private String lastName;
     private String dni;
     private String phone;
-    private Set<User> owner = new HashSet<>();
+    private Set<User> owners = new HashSet<>();
 
 }

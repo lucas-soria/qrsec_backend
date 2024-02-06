@@ -54,7 +54,7 @@ public class UserService {
             Optional<User> existentUser = userRepository.findByUsername(user.getUsername());
             if (existentUser.isPresent()) {
 
-                throw new ConflictException("User already exists");
+                throw new ConflictException("Already exists a User with values:\n" + user);
 
             }
             user = userRepository.insert(user);
@@ -88,7 +88,7 @@ public class UserService {
 
         if (!userRepository.existsById(id)) {
 
-            throw new NotFoundException("User not found");
+            throw new NotFoundException("User " + id + " not found");
 
         }
 
@@ -100,8 +100,11 @@ public class UserService {
 
         Optional<User> currentUser = this.findByUsername(username);
         if (currentUser.isEmpty()) {
-            throw new NotFoundException("User not found");
+
+            throw new NotFoundException("User " + username + " not found");
+
         }
+
         User user = currentUser.get();
 
         return user.getAuthorities().contains(role);

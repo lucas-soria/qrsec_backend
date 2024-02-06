@@ -14,7 +14,7 @@ java {
 
 jar {
     archiveBaseName = 'qrsec_backend'
-    archiveVersion =  '0.0.1'
+    archiveVersion =  '0.0.2'
 }
 
 application {
@@ -69,4 +69,4 @@ tasks.withType(JavaCompile) {
 
 description = 'qrsec'
 group = 'com.lsoria.qrsec'
-version = '0.0.1'
+version = '0.0.2'

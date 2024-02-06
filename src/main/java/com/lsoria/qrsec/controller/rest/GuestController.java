@@ -12,7 +12,6 @@ import com.lsoria.qrsec.domain.model.User;
 import com.lsoria.qrsec.service.GuestService;
 import com.lsoria.qrsec.service.UserService;
 import com.lsoria.qrsec.service.exception.NotFoundException;
-import com.lsoria.qrsec.service.exception.UnauthorizedException;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -55,10 +54,10 @@ public class GuestController {
     GuestMapper guestMapper;
 
     @Operation(summary = "Get all Guests (privileged)", description = "Get all Guests from the neighbourhood")
-    @GetMapping("/all/${api.path.guests}")
+    @GetMapping("/admin${api.path.guests}")
     @Parameter(
             name = "X-Email",
-            description = "Email of the Owner that wants to add the Guest",
+            description = "Email of the Admin that wants to see the Guests",
             in = ParameterIn.HEADER,
             required = true,
             schema = @Schema(
@@ -83,6 +82,11 @@ public class GuestController {
                     content = @Content()
             ),
             @ApiResponse(
+                    responseCode = "401",
+                    description = "User is not Authorized (not a privileged User)",
+                    content = @Content()
+            ),
+            @ApiResponse(
                     responseCode = "404",
                     description = "User not found on the database",
                     content = @Content()
@@ -93,14 +97,20 @@ public class GuestController {
                     content = @Content()
             )
     })
-    // TODO: Add @PreAuthorize("hasAuthority('ADMIN')")
     public ResponseEntity<List<GuestDTO>> getGuests(
             @RequestHeader(value = "X-Email") @NotNull String email
     ) {
 
         try {
 
-            List<Guest> guests = guestService.findAll(email, new Role(Role.ADMIN));
+            // TODO: Replace with @PreAuthorize("hasAuthority('ADMIN')")
+            if (!userService.userIsAuthorized(email, new Role(Role.ADMIN))) {
+
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+
+            }
+
+            List<Guest> guests = guestService.findAll();
             if (guests.isEmpty()) {
 
                 return ResponseEntity.noContent().build();
@@ -111,15 +121,9 @@ public class GuestController {
 
         } catch (NotFoundException exception) {
 
-            log.error("User not found");
+            log.error("Message: {}.", exception.getMessage());
 
             return ResponseEntity.notFound().build();
-
-        } catch (UnauthorizedException exception) {
-
-            log.error("User is not authorized to Use this endpoint");
-
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
 
         } catch (Exception exception) {
 
@@ -135,7 +139,7 @@ public class GuestController {
     @GetMapping("${api.path.guests}")
     @Parameter(
             name = "X-Email",
-            description = "Email of the Owner that wants to add the Guest",
+            description = "Email of the Owner that wants to see their Guests",
             in = ParameterIn.HEADER,
             required = true,
             schema = @Schema(
@@ -160,6 +164,11 @@ public class GuestController {
                     content = @Content()
             ),
             @ApiResponse(
+                    responseCode = "401",
+                    description = "User is not Authorized (not a privileged User)",
+                    content = @Content()
+            ),
+            @ApiResponse(
                     responseCode = "404",
                     description = "User not found on the database",
                     content = @Content()
@@ -170,14 +179,20 @@ public class GuestController {
                     content = @Content()
             )
     })
-    // TODO: Add @PreAuthorize("hasAuthority('OWNER')")
     public ResponseEntity<List<GuestDTO>> getCurrentOwnerGuests(
             @RequestHeader(value = "X-Email") @NotNull String email
     ) {
 
         try {
 
-            List<Guest> guests = guestService.findAllMyGuests(email, new Role(Role.OWNER));
+            // TODO: Replace with @PreAuthorize("hasAuthority('OWNER')")
+            if (!userService.userIsAuthorized(email, new Role(Role.OWNER))) {
+
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+
+            }
+
+            List<Guest> guests = guestService.findAllMyGuests(email);
             if (guests.isEmpty()) {
 
                 return ResponseEntity.noContent().build();
@@ -188,15 +203,9 @@ public class GuestController {
 
         } catch (NotFoundException exception) {
 
-            log.error("User not found");
+            log.error("Message: {}.", exception.getMessage());
 
             return ResponseEntity.notFound().build();
-
-        } catch (UnauthorizedException exception) {
-
-            log.error("User is not authorized to Use this endpoint");
-
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
 
         } catch (Exception exception) {
 
@@ -206,14 +215,13 @@ public class GuestController {
 
         return ResponseEntity.internalServerError().build();
 
-
     }
 
     @Operation(summary = "Get a Guest", description = "Get an specific Guest")
     @GetMapping("${api.path.guests}/{id}")
     @Parameter(
             name = "X-Email",
-            description = "Email of the Owner that wants to add the Guest",
+            description = "Email of the User that wants to see a Guest",
             in = ParameterIn.HEADER,
             required = true,
             schema = @Schema(
@@ -242,8 +250,13 @@ public class GuestController {
                     )
             ),
             @ApiResponse(
+                    responseCode = "401",
+                    description = "User is not Authorized",
+                    content = @Content()
+            ),
+            @ApiResponse(
                     responseCode = "404",
-                    description = "Guest not found",
+                    description = "Guest or User not found",
                     content = @Content()
             ),
             @ApiResponse(
@@ -257,27 +270,44 @@ public class GuestController {
             @PathVariable @NotNull String id
     ) {
 
-        Optional<User> currentUser = userService.findByUsername(email);
-        if (currentUser.isEmpty()) {
+        try {
+
+            // TODO: Replace with @PreAuthorize("hasAuthority('OWNER') or hasAuthority('ADMIN') or hasAuthority('GUARD')")
+            Optional<User> currentUser = userService.findByUsername(email);
+            if (currentUser.isEmpty()) {
+
+                return ResponseEntity.notFound().build();
+
+            }
+            Optional<Guest> guest = guestService.findOne(id);
+            if (guest.isEmpty()) {
+
+                return ResponseEntity.notFound().build();
+
+            }
+            if (userService.userIsAuthorized(email, new Role(Role.OWNER)) && !guest.get().getOwners().contains(currentUser.get())) {
+
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+
+            }
+
+            GuestDTO guestDTO = guestMapper.guestToGuestDTO(guest.get());
+
+            return ResponseEntity.ok(guestDTO);
+
+        } catch (NotFoundException exception) {
+
+            log.error("Message: {}.", exception.getMessage());
 
             return ResponseEntity.notFound().build();
 
-        }
-        Optional<Guest> guest = guestService.findOne(id);
-        if (guest.isEmpty()) {
+        } catch (Exception exception) {
 
-            return ResponseEntity.notFound().build();
-
-        }
-        if (currentUser.get().getAuthorities().contains(new Role(Role.OWNER)) && !guest.get().getOwner().contains(currentUser.get())) {
-
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+            log.error("Couldn't find the Guest {}.\nMessage: {}.\nStackTrace:\n{}", id, exception.getMessage(), exception.getStackTrace());
 
         }
 
-        GuestDTO guestDTO = guestMapper.guestToGuestDTO(guest.get());
-
-        return ResponseEntity.ok(guestDTO);
+        return ResponseEntity.internalServerError().build();
 
     }
 
@@ -285,7 +315,7 @@ public class GuestController {
     @PostMapping("${api.path.guests}")
     @Parameter(
             name = "X-Email",
-            description = "Email of the Owner that wants to add the Guest",
+            description = "Email of the Owner that wants to create the Guest",
             in = ParameterIn.HEADER,
             required = true,
             schema = @Schema(
@@ -311,12 +341,21 @@ public class GuestController {
                     )
             ),
             @ApiResponse(
+                    responseCode = "401",
+                    description = "User is not Authorized",
+                    content = @Content()
+            ),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "User not found",
+                    content = @Content()
+            ),
+            @ApiResponse(
                     responseCode = "500",
                     description = "Some error prevented the Guest from being created",
                     content = @Content()
             )
     })
-    // TODO: Add @PreAuthorize("hasAuthority('OWNER')")
     public ResponseEntity<GuestDTO> createGuest(
             @RequestHeader(value = "X-Email") @NotNull String email,
             @RequestBody @NotNull GuestDTO guestDTO
@@ -324,6 +363,7 @@ public class GuestController {
 
         try {
 
+            // TODO: Replace with @PreAuthorize("hasAuthority('OWNER')")
             if (!userService.userIsAuthorized(email, new Role(Role.OWNER))) {
 
                 return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
@@ -339,7 +379,7 @@ public class GuestController {
 
         } catch (NotFoundException exception) {
 
-            log.error("User {} not found", email);
+            log.error("Message: {}.", exception.getMessage());
 
             return ResponseEntity.notFound().build();
 
@@ -357,7 +397,7 @@ public class GuestController {
     @PutMapping("${api.path.guests}/{id}")
     @Parameter(
             name = "X-Email",
-            description = "Email of the Owner that wants to add the Guest",
+            description = "Email of the Admin that wants to update the Guest",
             in = ParameterIn.HEADER,
             required = true,
             schema = @Schema(
@@ -394,8 +434,13 @@ public class GuestController {
                     )
             ),
             @ApiResponse(
+                    responseCode = "401",
+                    description = "User is not Authorized",
+                    content = @Content()
+            ),
+            @ApiResponse(
                     responseCode = "404",
-                    description = "Guest not found",
+                    description = "Guest or User not found",
                     content = @Content()
             ),
             @ApiResponse(
@@ -404,15 +449,48 @@ public class GuestController {
                     content = @Content()
             )
     })
-    // TODO: Add @PreAuthorize("hasAuthority('ADMIN')")
     public ResponseEntity<GuestDTO> updateGuest(
             @RequestHeader(value = "X-Email") @NotNull String email,
             @PathVariable @NotNull String id,
             @RequestBody @NotNull GuestDTO guestDTO
     ) {
 
-        log.info("REST request to update Guest {}: {}", id, guestDTO);
-        return ResponseEntity.ok(guestDTO); // TODO: Use correct method
+        try {
+
+            // TODO: Replace with @PreAuthorize("hasAuthority('ADMIN')")
+            if (!userService.userIsAuthorized(email, new Role(Role.ADMIN))) {
+
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+
+            }
+
+            Optional<Guest> foundGuest = guestService.findOne(id);
+            if (foundGuest.isEmpty()) {
+
+                return ResponseEntity.notFound().build();
+
+            }
+
+            Guest guestToUpdate = foundGuest.get();
+            Guest guestNewValues = guestMapper.guestDTOToGuest(guestDTO);
+
+            Guest updatedGuest = guestService.update(guestToUpdate, guestNewValues);
+
+            return ResponseEntity.ok(guestMapper.guestToGuestDTO(updatedGuest));
+
+        } catch (NotFoundException exception) {
+
+            log.error("Message: {}.", exception.getMessage());
+
+            return ResponseEntity.notFound().build();
+
+        } catch (Exception exception) {
+
+            log.error("Couldn't update Guest with values:\n{}\nMessage: {}.\nStackTrace:\n{}", guestDTO, exception.getMessage(), exception.getStackTrace());
+
+        }
+
+        return ResponseEntity.internalServerError().build();
 
     }
 
@@ -420,7 +498,7 @@ public class GuestController {
     @DeleteMapping("${api.path.guests}/{id}")
     @Parameter(
             name = "X-Email",
-            description = "Email of the Owner that wants to add the Guest",
+            description = "Email of the Owner that wants to delete the Guest",
             in = ParameterIn.HEADER,
             required = true,
             schema = @Schema(
@@ -446,8 +524,13 @@ public class GuestController {
                     content = @Content()
             ),
             @ApiResponse(
+                    responseCode = "401",
+                    description = "User is not Authorized",
+                    content = @Content()
+            ),
+            @ApiResponse(
                     responseCode = "404",
-                    description = "Guest not found",
+                    description = "Guest or Owner not found",
                     content = @Content()
             ),
             @ApiResponse(
@@ -456,13 +539,49 @@ public class GuestController {
                     content = @Content()
             )
     })
-    // TODO: Add @PreAuthorize("hasAuthority('OWNER || ADMIN')")
-    public void deleteGuest(
+    public ResponseEntity<GuestDTO> deleteGuest(
             @RequestHeader(value = "X-Email") @NotNull String email,
             @PathVariable @NotNull String id
     ) {
 
-        log.info("REST request to delete Guest {}", id); // TODO: Delete Guest
+        try {
+
+            Optional<User> currentUser = userService.findByUsername(email);
+            if (currentUser.isEmpty()) {
+
+                return ResponseEntity.notFound().build();
+
+            }
+            Optional<Guest> guest = guestService.findOne(id);
+            if (guest.isEmpty()) {
+
+                return ResponseEntity.notFound().build();
+
+            }
+            // TODO: Replace with @PreAuthorize("hasAuthority('OWNER')")
+            if (userService.userIsAuthorized(email, new Role(Role.OWNER)) && !guest.get().getOwners().contains(currentUser.get())) {
+
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+
+            }
+
+            guestService.delete(id, email);
+
+            return ResponseEntity.noContent().build();
+
+        } catch (NotFoundException exception) {
+
+            log.error("Message: {}.", exception.getMessage());
+
+            return ResponseEntity.notFound().build();
+
+        } catch (Exception exception) {
+
+            log.error("Couldn't delete the Guest {}.\nMessage: {}.\nStackTrace:\n{}", id, exception.getMessage(), exception.getStackTrace());
+
+        }
+
+        return ResponseEntity.internalServerError().build();
 
     }
 

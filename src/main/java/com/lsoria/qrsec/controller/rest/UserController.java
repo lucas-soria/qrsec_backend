@@ -236,16 +236,17 @@ public class UserController {
             @RequestBody @NotNull UserDTO userDTO
     ) {
 
-        Optional<User> foundUser = userService.findOne(id);
-
-        if (foundUser.isEmpty()) {
-            return ResponseEntity.notFound().build();
-        }
-
-        User userToUpdate = foundUser.get();
-        User userNewValues = userMapper.userDTOToUser(userDTO);
-
         try {
+
+            Optional<User> foundUser = userService.findOne(id);
+            if (foundUser.isEmpty()) {
+
+                return ResponseEntity.notFound().build();
+
+            }
+
+            User userToUpdate = foundUser.get();
+            User userNewValues = userMapper.userDTOToUser(userDTO);
 
             User updatedUser = userService.update(userToUpdate, userNewValues);
 
