@@ -1,17 +1,17 @@
 package com.lsoria.qrsec.service;
 
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Optional;
+
 import com.lsoria.qrsec.domain.model.Invite;
 import com.lsoria.qrsec.repository.InviteRepository;
 import com.lsoria.qrsec.repository.UserRepository;
-import com.lsoria.qrsec.security.utils.SecurityContextUserInfo;
+
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.time.LocalDateTime;
-import java.util.List;
-import java.util.Optional;
 
 @Service
 @Transactional
@@ -26,7 +26,8 @@ public class InviteService {
 
     public Invite save(Invite invite) {
         log.info("Request to save Invite : {}", invite);
-        String currentlyLoggedInUsername = new SecurityContextUserInfo().getUsername();
+        // String currentlyLoggedInUsername = new SecurityContextUserInfo().getUsername();
+        String currentlyLoggedInUsername = "username"; // TODO: Fix
         invite.setOwner(userRepository.findByUsername(currentlyLoggedInUsername).get());
         invite.setCreated(LocalDateTime.now());
         invite.setModified(invite.getCreated());

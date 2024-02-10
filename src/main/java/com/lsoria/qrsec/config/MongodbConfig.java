@@ -8,7 +8,7 @@ import org.springframework.data.mongodb.core.convert.DefaultMongoTypeMapper;
 import org.springframework.data.mongodb.core.convert.MappingMongoConverter;
 
 @Configuration
-public class MongoConfig implements InitializingBean {
+public class MongodbConfig implements InitializingBean {
 
     @Lazy
     @Autowired
@@ -16,7 +16,7 @@ public class MongoConfig implements InitializingBean {
 
     @Override
     public void afterPropertiesSet() throws Exception {
-        mappingMongoConverter.setTypeMapper(new DefaultMongoTypeMapper(null));
+        this.mappingMongoConverter.setTypeMapper(new DefaultMongoTypeMapper(null));
     }
 
 }

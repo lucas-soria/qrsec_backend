@@ -54,7 +54,7 @@ public class GuestController {
     GuestMapper guestMapper;
 
     @Operation(summary = "Get all Guests (privileged)", description = "Get all Guests from the neighbourhood")
-    @GetMapping("/admin${api.path.guests}")
+    @GetMapping("${api.path.admin.guests}")
     @Parameter(
             name = "X-Email",
             description = "Email of the Admin that wants to see the Guests",

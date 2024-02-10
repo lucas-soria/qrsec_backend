@@ -13,9 +13,12 @@ public class WebConfig implements WebMvcConfigurer {
     @Value("${api.path}")
     private String path;
 
+    @Value("${frontend}")
+    private String frontend;
+
     @Override
     public void addCorsMappings(CorsRegistry registry) {
-        registry.addMapping(this.path + "/**").allowedOrigins("http://localhost", "https://localhost", "http://localhost:8080", "http://localhost:3000");
+        registry.addMapping(this.path + "/**").allowedOrigins(this.frontend);
     }
 
 }

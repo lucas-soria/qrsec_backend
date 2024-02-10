@@ -46,7 +46,7 @@ public class InviteController {
     InviteMapper inviteMapper;
 
     @Operation(summary = "Get all Invites (privileged)", description = "Get all Invites from the neighbourhood")
-    @GetMapping("/all/${api.path.invites}")
+    @GetMapping("${api.path.admin.invites}")
     @ApiResponses(value = {
             @ApiResponse(
                     responseCode = "200",

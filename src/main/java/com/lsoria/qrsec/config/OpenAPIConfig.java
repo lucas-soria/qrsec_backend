@@ -10,13 +10,13 @@ import org.springframework.context.annotation.Configuration;
 public class OpenAPIConfig {
 
     @Bean
-    public OpenAPI usersMicroserviceOpenAPI() {
+    public OpenAPI microserviceOpenAPI() {
         return new OpenAPI().info(new Info()
                 .title("QRSec Backend")
                 .description("QRSec backend OpenAPI documentation")
                 .contact(new Contact()
                         .email("l.soria@alumno.um.edu.ar")
-                        .url("qrsec.lsoria.com")
+                        .url("/")
                         .name("Lucas Damián Soria Gava")
                 )
         );
