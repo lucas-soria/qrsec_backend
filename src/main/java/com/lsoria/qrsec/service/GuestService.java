@@ -68,9 +68,8 @@ public class GuestService {
 
         }
         guest.getOwners().add(currentUser.get()); // TODO: Ante nuevo Guest de 0 es una doble asignacion de owner?
-        guest = guestRepository.save(guest);
 
-        return guest;
+        return guestRepository.insert(guest);
 
     }
 

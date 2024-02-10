@@ -9,7 +9,7 @@ import com.lsoria.qrsec.repository.UserRepository;
 import com.lsoria.qrsec.service.exception.ConflictException;
 import com.lsoria.qrsec.service.exception.NotFoundException;
 
-import com.mongodb.DuplicateKeyException;
+import org.springframework.dao.DuplicateKeyException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -47,19 +47,11 @@ public class UserService {
 
     public User save(User user) throws Exception {
 
-        user.setPassword(passwordEncoder.encode(user.getPassword()));
-
         try {
 
-            Optional<User> existentUser = userRepository.findByUsername(user.getUsername());
-            if (existentUser.isPresent()) {
+            user.setPassword(passwordEncoder.encode(user.getPassword()));
 
-                throw new ConflictException("Already exists a User with values:\n" + user);
-
-            }
-            user = userRepository.insert(user);
-
-            return user;
+            return userRepository.insert(user);
 
         } catch (DuplicateKeyException duplicateKeyException) {
 
@@ -86,13 +78,17 @@ public class UserService {
 
     public void delete(String id) throws Exception {
 
-        if (!userRepository.existsById(id)) {
+        Optional<User> userFound = this.findOne(id);
+        if (userFound.isEmpty()) {
 
             throw new NotFoundException("User " + id + " not found");
 
         }
 
-        userRepository.deleteById(id);
+        User user = userFound.get();
+        user.setEnabled(false);
+
+        userRepository.save(user);
 
     }
 

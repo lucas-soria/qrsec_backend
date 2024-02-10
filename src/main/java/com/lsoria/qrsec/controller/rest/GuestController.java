@@ -494,7 +494,7 @@ public class GuestController {
 
     }
 
-    @Operation(summary = "Delete a Guest", description = "Delete an Owner from the Guest list or the Guest if it was the last Owner")
+    @Operation(summary = "Delete a Guest (Owner only)", description = "Delete an Owner from the Guest list or the Guest if it was the last Owner")
     @DeleteMapping("${api.path.guests}/{id}")
     @Parameter(
             name = "X-Email",

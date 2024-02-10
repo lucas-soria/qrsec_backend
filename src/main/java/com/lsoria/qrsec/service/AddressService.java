@@ -8,9 +8,9 @@ import com.lsoria.qrsec.repository.AddressRepository;
 import com.lsoria.qrsec.service.exception.ConflictException;
 import com.lsoria.qrsec.service.exception.NotFoundException;
 
-import com.mongodb.DuplicateKeyException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -38,15 +38,7 @@ public class AddressService {
 
         try {
 
-            Optional<Address> existentAddress = addressRepository.findByHouse(address.getHouse());
-            if (existentAddress.isPresent()) {
-
-                throw new ConflictException("Address already exists");
-
-            }
-            address = addressRepository.insert(address);
-
-            return address;
+            return addressRepository.insert(address);
 
         } catch (DuplicateKeyException duplicateKeyException) {
 
