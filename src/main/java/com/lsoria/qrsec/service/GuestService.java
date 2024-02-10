@@ -67,7 +67,7 @@ public class GuestService {
             throw new NotFoundException("User " + username + " not found");
 
         }
-        guest.getOwners().add(currentUser.get()); // TODO: Ante nuevo Guest de 0 es una doble asignacion de owner?
+        guest.getOwners().add(currentUser.get());
 
         return guestRepository.insert(guest);
 
@@ -104,13 +104,18 @@ public class GuestService {
         User user = foundUser.get();
         Set<User> owners = guestToDelete.getOwners();
         if (owners.size() == 1) {
+
             guestRepository.deleteById(id);
+
+            return;
+
         }
         if (!owners.remove(user)) {
 
             throw new NotFoundException("Guest " + id + " not found");
 
         }
+
         guestToDelete.setOwners(owners);
         guestRepository.save(guestToDelete);
 

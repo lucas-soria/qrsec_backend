@@ -1,10 +1,12 @@
 package com.lsoria.qrsec.domain.dto.mapper;
 
 import com.lsoria.qrsec.domain.dto.InviteDTO;
+import com.lsoria.qrsec.domain.dto.PublicInviteDTO;
 import com.lsoria.qrsec.domain.model.Invite;
 
 import org.mapstruct.InjectionStrategy;
 import org.mapstruct.Mapper;
+import org.mapstruct.Mapping;
 import org.mapstruct.MappingConstants;
 import org.mapstruct.ReportingPolicy;
 
@@ -14,5 +16,8 @@ public interface InviteMapper {
     InviteDTO inviteToInviteDTO(Invite invite);
 
     Invite inviteDTOToInvite(InviteDTO inviteDTO);
+
+    @Mapping(target = "location", source = "owner.address.location")
+    PublicInviteDTO inviteToPublicInviteDTO(Invite invite);
 
 }

@@ -19,12 +19,15 @@ public class InviteDTO {
 
     @Schema(accessMode = Schema.AccessMode.READ_ONLY)
     private String id;
+    @Schema(accessMode = Schema.AccessMode.READ_ONLY)
     private User owner;
     private Set<Guest> guests  = new HashSet<>();
     private Set<String> days  = new HashSet<>();
     private List<List<String>> hours;
-    private Integer maxTime;
-    private Integer passengers;
-    private Boolean drop;
+    private Integer maxTimeAllowed;
+    private Integer numberOfPassengers;
+    private Boolean dropsTrueGuest;
+    @Schema(accessMode = Schema.AccessMode.READ_ONLY)
+    private Boolean enabled;
 
 }

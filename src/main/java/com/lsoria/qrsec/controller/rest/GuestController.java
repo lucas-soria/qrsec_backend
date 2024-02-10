@@ -165,7 +165,7 @@ public class GuestController {
             ),
             @ApiResponse(
                     responseCode = "401",
-                    description = "User is not Authorized (not a privileged User)",
+                    description = "User is not Authorized (not an Owner)",
                     content = @Content()
             ),
             @ApiResponse(
@@ -285,7 +285,7 @@ public class GuestController {
                 return ResponseEntity.notFound().build();
 
             }
-            if (userService.userIsAuthorized(email, new Role(Role.OWNER)) && !guest.get().getOwners().contains(currentUser.get())) {
+            if ((currentUser.get().getAuthorities() == null || currentUser.get().getAuthorities().isEmpty()) || (userService.userIsAuthorized(email, new Role(Role.OWNER)) && !guest.get().getOwners().contains(currentUser.get()))) {
 
                 return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
 
