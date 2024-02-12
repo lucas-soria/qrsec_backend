@@ -22,48 +22,64 @@ application {
 }
 
 dependencies {
-    implementation 'org.jetbrains:annotations:24.1.0'
 
+    // Spring Web
     implementation 'org.springframework.boot:spring-boot-starter-web:3.2.2'
     testImplementation 'org.springframework.boot:spring-boot-starter-test:3.2.2'
 
+    // Mongodb
     implementation 'org.springframework.boot:spring-boot-starter-data-mongodb:3.2.2'
+    testImplementation 'org.springframework.boot:spring-boot-starter-data-mongodb:3.2.2'
 
+    // Data
     implementation 'org.springframework.boot:spring-boot-starter-data-rest:3.2.2'
+    testImplementation 'org.springframework.boot:spring-boot-starter-data-rest:3.2.2'
 
+    // Security
     implementation 'org.springframework.boot:spring-boot-starter-security:3.2.2'
     testImplementation 'org.springframework.security:spring-security-test:6.2.1'
 
+    // This includes some imports with interesting annotations like @NotNull
     implementation 'org.springframework.boot:spring-boot-starter-validation:3.2.2'
+    testImplementation 'org.springframework.boot:spring-boot-starter-validation:3.2.2'
 
-    runtimeOnly 'org.springframework.boot:spring-boot-devtools:3.2.2'
+    // Will be used later
+    // implementation 'org.springframework.session:spring-session-core:3.2.1'
 
-    implementation 'org.springframework.session:spring-session-core:3.2.1'
+    // Will be used later
+    // implementation 'com.auth0:java-jwt:4.4.0'
 
-    implementation 'com.auth0:java-jwt:4.4.0'
-
-    // Needs to be before mapstruct
+    // Lombok (Needs to be before mapstruct)
     compileOnly 'org.projectlombok:lombok:1.18.30'
     annotationProcessor 'org.projectlombok:lombok:1.18.30'
     testCompileOnly 'org.projectlombok:lombok:1.18.30'
     testAnnotationProcessor 'org.projectlombok:lombok:1.18.30'
 
-    compileOnly 'org.mapstruct:mapstruct-processor:1.5.5.Final'
-    implementation 'org.mapstruct:mapstruct:1.5.5.Final'
+    // Mapstruct
+    compileOnly 'org.mapstruct:mapstruct:1.5.5.Final'
     annotationProcessor "org.mapstruct:mapstruct-processor:1.5.5.Final"
+    testCompileOnly 'org.mapstruct:mapstruct:1.5.5.Final'
+    testAnnotationProcessor "org.mapstruct:mapstruct-processor:1.5.5.Final"
 
-    implementation 'javax.servlet:javax.servlet-api:4.0.1'
+    // May be necessary in the future
+    // implementation 'javax.servlet:javax.servlet-api:4.0.1'
 
     // OpenAPI 3
-    // https://mvnrepository.com/artifact/org.springdoc/springdoc-openapi-starter-webmvc-ui
     implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.3.0'
+
+    // Test
+    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.10.2'
+    testImplementation 'org.junit.jupiter:junit-jupiter-params:5.10.2'
+    testImplementation 'org.junit.jupiter:junit-jupiter:5.9.2'
+    testImplementation 'org.mockito:mockito-junit-jupiter:5.10.0'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 }
 
 test {
     useJUnitPlatform()
 }
 
-tasks.withType(JavaCompile) {
+tasks.withType(JavaCompile).configureEach {
     options.compilerArgs << "-parameters"
 }
 
