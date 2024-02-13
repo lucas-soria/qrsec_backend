@@ -1,8 +1,13 @@
 plugins {
     id 'application'
     id 'java'
+    id 'org.springframework.boot' version '3.2.2'
     id "com.github.ben-manes.versions" version "0.51.0"
 }
+
+description = 'qrsec'
+group = 'com.lsoria.qrsec'
+version = '0.0.2'
 
 repositories {
     mavenCentral()
@@ -13,8 +18,13 @@ java {
 }
 
 jar {
+    enabled = false
+}
+
+tasks.named("bootJar") {
+    mainClass = 'com.lsoria.qrsec.QrsecApplication'
+    archiveClassifier = ''
     archiveBaseName = 'qrsec_backend'
-    archiveVersion =  '0.0.2'
 }
 
 application {
@@ -38,6 +48,9 @@ dependencies {
     // Security
     implementation 'org.springframework.boot:spring-boot-starter-security:3.2.2'
     testImplementation 'org.springframework.security:spring-security-test:6.2.1'
+
+    // PasswordEncoder
+    // implementation 'org.springframework.security:spring-security-crypto:6.2.1'
 
     // This includes some imports with interesting annotations like @NotNull
     implementation 'org.springframework.boot:spring-boot-starter-validation:3.2.2'
@@ -82,7 +95,3 @@ test {
 tasks.withType(JavaCompile).configureEach {
     options.compilerArgs << "-parameters"
 }
-
-description = 'qrsec'
-group = 'com.lsoria.qrsec'
-version = '0.0.2'

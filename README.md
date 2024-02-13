@@ -12,7 +12,7 @@
 
 # Getting Started
 
-## Running the project
+## Running the project (local)
 ### Normal run
 
 ```shell
@@ -62,6 +62,10 @@
 ./gradlew clean build --refresh-dependencies --exclude-task test
 ```
 
+## Run production ready versions
+```shell
+java -jar ./build/libs/qrsec_backend-x.y.z.jar 
+```
 
 [^1]: Or any defined gradle task.
 [^2]: This gradle task ensures a clean build environment before starting the build process by cleaning the build directory of the project.
