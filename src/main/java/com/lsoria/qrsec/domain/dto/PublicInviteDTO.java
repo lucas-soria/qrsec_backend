@@ -1,5 +1,7 @@
 package com.lsoria.qrsec.domain.dto;
 
+import com.lsoria.qrsec.domain.model.Location;
+
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -7,9 +9,9 @@ import lombok.NoArgsConstructor;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class JsonUserLoginDTO {
+public class PublicInviteDTO {
 
-    private String username;
-    private String password;
+    private String id;
+    private Location location;
 
 }

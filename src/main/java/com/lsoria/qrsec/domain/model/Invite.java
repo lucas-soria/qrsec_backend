@@ -1,5 +1,10 @@
 package com.lsoria.qrsec.domain.model;
 
+import java.time.LocalDateTime;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -10,11 +15,6 @@ import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.data.mongodb.core.mapping.DocumentReference;
 import org.springframework.data.mongodb.core.mapping.Field;
-
-import java.time.LocalDateTime;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
 
 @Data
 @AllArgsConstructor
@@ -31,15 +31,22 @@ public class Invite {
     private Set<Guest> guests  = new HashSet<>();
     private Set<String> days  = new HashSet<>();
     private List<List<String>> hours;
-    @Field("max_allowed_time")
-    private Integer maxTime;
-    private Integer passengers;
-    private Boolean drop;
-    private LocalDateTime arrival;
-    private LocalDateTime departure;
+    @Field("max_time_allowed")
+    private Integer maxTimeAllowed;
+    @Field("number_of_passengers")
+    private Integer numberOfPassengers;
+    @Field("drops_true_guest")
+    private Boolean dropsTrueGuest;
+    @Field("arrival_time")
+    private LocalDateTime arrivalTime;
+    @Field("departure_time")
+    private LocalDateTime departureTime;
     @CreatedDate
-    private LocalDateTime created;
+    @Field("created_at")
+    private LocalDateTime createdAt;
     @LastModifiedDate
-    private LocalDateTime modified;
+    @Field("last_modified_at")
+    private LocalDateTime lastModifiedAt;
+    private Boolean enabled = false;
 
 }

@@ -1,0 +1,11 @@
+# Repo stuff
+.github
+.git
+
+# IDE
+.idea
+
+# Project generated junk
+.gradle
+build
+src/test
