@@ -1,8 +1,14 @@
 package com.lsoria.qrsec.config;
 
+import java.util.Arrays;
+import java.util.Collections;
+
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.web.servlet.config.annotation.CorsRegistry;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import org.springframework.web.servlet.config.annotation.EnableWebMvc;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
@@ -16,9 +22,19 @@ public class WebConfig implements WebMvcConfigurer {
     @Value("${frontend}")
     private String frontend;
 
-    @Override
-    public void addCorsMappings(CorsRegistry registry) {
-        registry.addMapping(this.path + "/**").allowedOrigins(this.frontend);
+    @Bean
+    public CorsConfigurationSource corsConfigurationSource() {
+
+        final CorsConfiguration configuration = new CorsConfiguration();
+        configuration.setAllowedOrigins(Collections.singletonList(this.frontend));
+        configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE"));
+        configuration.setAllowCredentials(true);
+        configuration.setAllowedHeaders(Arrays.asList("Authorization", "Cache-Control", "Content-Type", "Accept"));
+        final UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration(this.path+"/**", configuration);
+
+        return source;
+
     }
 
 }
