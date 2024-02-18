@@ -1,6 +1,6 @@
 # qrsec_backend
 
-> Thesis backend project for the University of Mendoza's Information Technologies Engineering program.
+> Thesis backend project for the Bachelor's degree in Information Technologies Engineering at the University of Mendoza.
  
 - CRUD:
   - Address
@@ -65,6 +65,17 @@
 ## Run production ready versions
 ```shell
 java -jar ./build/libs/qrsec_backend-x.y.z.jar 
+```
+
+# Docker
+## Build Docker image
+```shell
+docker build -t qrsec_backend:x.x.x -t qrsec_backend:latest .
+```
+
+## Run standalone Docker image
+```shell
+docker run --rm -d -p 8080:8080 --name qrsec_backend --env-file .env qrsec_backend
 ```
 
 [^1]: Or any defined gradle task.
