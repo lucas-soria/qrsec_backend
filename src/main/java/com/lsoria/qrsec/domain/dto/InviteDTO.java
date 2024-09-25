@@ -19,6 +19,7 @@ public class InviteDTO {
 
     @Schema(accessMode = Schema.AccessMode.READ_ONLY)
     private String id;
+    private String description;
     @Schema(accessMode = Schema.AccessMode.READ_ONLY)
     private User owner;
     private Set<Guest> guests  = new HashSet<>();

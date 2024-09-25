@@ -24,6 +24,7 @@ public class Invite {
 
     @Id
     private String id;
+    private String description;
     @DocumentReference
     @CreatedBy
     private User owner;
