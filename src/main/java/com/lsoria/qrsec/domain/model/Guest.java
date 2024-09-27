@@ -1,5 +1,8 @@
 package com.lsoria.qrsec.domain.model;
 
+import java.util.HashSet;
+import java.util.Set;
+
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -8,9 +11,6 @@ import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.data.mongodb.core.mapping.DocumentReference;
 import org.springframework.data.mongodb.core.mapping.Field;
-
-import java.util.HashSet;
-import java.util.Set;
 
 @Data
 @AllArgsConstructor
@@ -28,6 +28,6 @@ public class Guest {
     private String dni;
     private String phone;
     @DocumentReference
-    private Set<User> owner = new HashSet<>();
+    private Set<User> owners = new HashSet<>();
 
 }
