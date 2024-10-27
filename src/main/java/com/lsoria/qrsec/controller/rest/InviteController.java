@@ -1,5 +1,7 @@
 package com.lsoria.qrsec.controller.rest;
 
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -30,15 +32,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestHeader;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @Slf4j
 @RestController
@@ -651,6 +645,119 @@ public class InviteController {
         } catch (Exception exception) {
 
             log.error("Couldn't delete the Invite {}.\nMessage: {}.\nStackTrace:\n{}", id, exception.getMessage(), exception.getStackTrace());
+
+        }
+
+        return ResponseEntity.internalServerError().build();
+
+    }
+
+    @Operation(summary = "Validate an Invite", description = "Check if an Invite is valid in a certain moment in time")
+    @GetMapping("${api.path.validate.invites}/{id}")
+    @Parameter(
+            name = "X-Email",
+            description = "Email of the Owner that wants to delete the Invite",
+            in = ParameterIn.HEADER,
+            required = true,
+            schema = @Schema(
+                    type = "string",
+                    example = "exa@mple.com"
+            )
+    )
+    @Parameter(
+            name = "X-Client-Timestamp",
+            description = "Timestamp of the Guard that is trying to validate the invite.\nShould be ISO 8601 formatted",
+            in = ParameterIn.HEADER,
+            required = true,
+            schema = @Schema(
+                    type = "string",
+                    example = "2024-09-23T14:30:00+02:00"
+            )
+    )
+    @Parameter(
+            name = "id",
+            description = "Invite uuid",
+            in = ParameterIn.PATH,
+            required = true,
+            schema = @Schema(
+                    type = "string",
+                    format = "uuid",
+                    example = "5f15a5256d2a2a1ac0e4d999"
+            )
+    )
+    @ApiResponses(value = {
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "Invite is valid",
+                    content = @Content()
+            ),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "Headers or path param are missing or invite is invalid",
+                    content = @Content()
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "User is not Authorized (not a Guard)",
+                    content = @Content()
+            ),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "Invite not found",
+                    content = @Content()
+            ),
+            @ApiResponse(
+                    responseCode = "500",
+                    description = "Some error prevented the Invite from being deleted or the Owner from being removed",
+                    content = @Content()
+            )
+    })
+    public ResponseEntity<InviteDTO> validateInvite(
+            @RequestHeader(value = "X-Email") @NotNull String email,
+            @RequestHeader(value = "X-Client-Timestamp") @NotNull String timestamp,
+            @PathVariable @NotNull String id
+    ) {
+
+        try {
+
+            Optional<User> currentUser = userService.findByUsername(email);
+            if (currentUser.isEmpty()) {
+
+                return ResponseEntity.notFound().build();
+
+            }
+            Optional<Invite> invite = inviteService.findOne(id);
+            if (invite.isEmpty()) {
+
+                return ResponseEntity.notFound().build();
+
+            }
+            // TODO: Replace with @PreAuthorize("hasAuthority('GUARD')")
+            if (userService.userIsAuthorized(email, new Role(Role.GUARD))) {
+
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+
+            }
+
+            LocalDateTime parsedTimestamp = LocalDateTime.parse(timestamp, DateTimeFormatter.ISO_DATE_TIME);
+
+            if (!inviteService.inviteIsValid(invite.get(), parsedTimestamp)) {
+
+                return ResponseEntity.badRequest().build();
+
+            }
+
+            return ResponseEntity.ok().build();
+
+        } catch (NotFoundException exception) {
+
+            log.error("Message: {}.", exception.getMessage());
+
+            return ResponseEntity.notFound().build();
+
+        } catch (Exception exception) {
+
+            log.error("Couldn't validate the Invite {}.\nMessage: {}.\nStackTrace:\n{}", id, exception.getMessage(), exception.getStackTrace());
 
         }
 

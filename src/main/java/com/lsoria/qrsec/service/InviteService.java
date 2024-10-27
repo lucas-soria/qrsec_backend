@@ -1,8 +1,12 @@
 package com.lsoria.qrsec.service;
 
+import java.time.DayOfWeek;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 import com.lsoria.qrsec.domain.model.Invite;
 import com.lsoria.qrsec.domain.model.User;
@@ -24,6 +28,8 @@ public class InviteService {
 
     @Autowired
     UserService userService;
+
+    private final DateTimeFormatter timeFormatter = DateTimeFormatter.ofPattern("HH:mm");
 
     public List<Invite> findAll() {
 
@@ -121,6 +127,42 @@ public class InviteService {
         inviteRepository.save(inviteToDelete);
 
         return false;
+
+    }
+
+    public Boolean inviteIsValid(Invite invite, LocalDateTime timestamp) throws Exception {
+
+        //TODO: Validate that invite is enabled
+
+        DayOfWeek day = timestamp.getDayOfWeek();
+        int dayAsInt = day.getValue();
+        if (dayAsInt == 7) {
+            dayAsInt = 0;
+        }
+
+        Set<String> inviteDays = invite.getDays();
+        if (!inviteDays.contains(Integer.toString(dayAsInt))) {
+            return false;
+        }
+
+        LocalTime timeFromTimestamp = timestamp.toLocalTime();
+
+        boolean isInBetween = false;
+
+        for (int i = 0; i < invite.getHours().size(); i++) {
+            String startTime = invite.getHours().get(i).get(0);
+            String endTime = invite.getHours().get(i).get(1);
+
+            LocalTime parsedStartTime = LocalTime.parse(startTime, timeFormatter);
+            LocalTime parsedEndTime = LocalTime.parse(endTime, timeFormatter);
+
+            if (timeFromTimestamp.isAfter(parsedStartTime) && timeFromTimestamp.isBefore(parsedEndTime)) {
+                isInBetween = true;
+                break;
+            }
+        }
+
+        return isInBetween;
 
     }
 
