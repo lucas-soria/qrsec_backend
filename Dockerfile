@@ -11,7 +11,7 @@ WORKDIR /app
 RUN apk add --no-cache openjdk21-jre-headless
 
 # Build the project
-RUN sh ./gradlew clean build --exclude-task test
+RUN sh ./gradlew clean build --exclude-task test --no-daemon
 
 # Stage 2: Run
 FROM openjdk:21-jdk as run
