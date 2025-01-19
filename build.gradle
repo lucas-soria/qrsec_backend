@@ -7,7 +7,7 @@ plugins {
 
 description = 'qrsec'
 group = 'com.lsoria.qrsec'
-version = '0.0.2'
+version = '0.0.3'
 
 repositories {
     mavenCentral()
