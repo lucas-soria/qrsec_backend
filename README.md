@@ -12,6 +12,12 @@
 
 # Getting Started
 
+## Environment variables
+First of all, you need to configure all environment variables, this file will tell you the name of the variables
+you have to configure.
+
+[Environment variables file](ENVIRONMENT.md).
+
 ## Running the project (local)
 ### Normal run
 
