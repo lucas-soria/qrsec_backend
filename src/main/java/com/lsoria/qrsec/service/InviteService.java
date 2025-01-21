@@ -132,7 +132,21 @@ public class InviteService {
 
     public Boolean inviteIsValid(Invite invite, LocalDateTime timestamp) throws Exception {
 
-        //TODO: Validate that invite is enabled
+        if (!invite.getEnabled()) {
+            return false;
+        }
+
+        // If the person wants to get in before the invite was created -> invalid request
+        if (timestamp.isBefore(invite.getCreatedAt())) {
+            return false;
+        }
+
+        // If the person has left and the time they want to get in is before the time they left  -> invalid invite
+        if (invite.getDepartureTime() != null && timestamp.isBefore(invite.getDepartureTime())) {
+            return false;
+        }
+
+        // TODO: Create endpoint to enable, update arrival/departure
 
         DayOfWeek day = timestamp.getDayOfWeek();
         int dayAsInt = day.getValue();

@@ -656,7 +656,7 @@ public class InviteController {
     @GetMapping("${api.path.validate.invites}/{id}")
     @Parameter(
             name = "X-Email",
-            description = "Email of the Owner that wants to delete the Invite",
+            description = "Email of the Guard that wants to validate the Invite",
             in = ParameterIn.HEADER,
             required = true,
             schema = @Schema(
