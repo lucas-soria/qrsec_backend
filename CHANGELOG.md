@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.0.4] - 2025-01-21 ([#9](https://github.com/lucas-soria/qrsec_backend/pull/9))
+### Added
+- Invite validation algorithm and endpoint.
+- Invite "action" endpoint.
+
+### Fixed
+- Authorization on certain invite's endpoints.
+
 ## [0.0.3] - 2025-01-19 ([#7](https://github.com/lucas-soria/qrsec_backend/pull/7))
 ### Added
 - CORS policies as environment variables.
