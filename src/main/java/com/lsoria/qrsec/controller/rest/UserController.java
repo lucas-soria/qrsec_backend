@@ -51,7 +51,7 @@ public class UserController {
     UserMapper userMapper;
 
     @Operation(summary = "Get all Users (privileged)", description = "Get all Users from the neighbourhood")
-    @GetMapping("${api.path.admin.users}")
+    @GetMapping("${api.path.users}")
     @Parameter(
             name = "X-Email",
             description = "Email of the Admin that wants to see the Users",
@@ -200,7 +200,16 @@ public class UserController {
                 return ResponseEntity.notFound().build();
 
             }
-            if ((currentUser.get().getAuthorities() == null || currentUser.get().getAuthorities().isEmpty()) || (currentUser.get().getAuthorities().contains(new Role(Role.OWNER)) && !Objects.equals(currentUser.get().getId(), user.get().getId()))) {
+            if (
+                (
+                    currentUser.get().getAuthorities() == null ||
+                    currentUser.get().getAuthorities().isEmpty()
+                ) ||
+                (
+                    currentUser.get().getAuthorities().contains(new Role(Role.OWNER)) &&
+                    !Objects.equals(currentUser.get().getId(), user.get().getId())
+                )
+            ) {
 
                 return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
 
@@ -363,7 +372,19 @@ public class UserController {
                 return ResponseEntity.notFound().build();
 
             }
-            if (currentUser.get().getAuthorities().contains(new Role(Role.ADMIN)) || (currentUser.get().getAuthorities().contains(new Role(Role.OWNER)) && !Objects.equals(currentUser.get().getId(), foundUser.get().getId()))) {
+            if (
+                (
+                    currentUser.get().getAuthorities() == null ||
+                    currentUser.get().getAuthorities().isEmpty()
+                ) ||
+                (
+                    !currentUser.get().getAuthorities().contains(new Role(Role.ADMIN)) &&
+                    (
+                        currentUser.get().getAuthorities().contains(new Role(Role.OWNER)) &&
+                        !Objects.equals(currentUser.get().getId(), foundUser.get().getId())
+                    )
+                )
+            ) {
 
                 return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
 
@@ -444,8 +465,26 @@ public class UserController {
                 return ResponseEntity.notFound().build();
 
             }
+            Optional<User> foundUser = userService.findOne(id);
+            if (foundUser.isEmpty()) {
+
+                return ResponseEntity.notFound().build();
+
+            }
             // TODO: Replace with @PreAuthorize("hasAuthority('OWNER') or hasAuthority('ADMIN')")
-            if ((!Objects.equals(currentUser.get().getId(), id) && userService.userIsAuthorized(email, new Role(Role.OWNER))) || userService.userIsAuthorized(email, new Role(Role.GUARD))) {
+            if (
+                (
+                    currentUser.get().getAuthorities() == null ||
+                    currentUser.get().getAuthorities().isEmpty()
+                ) ||
+                (
+                    !currentUser.get().getAuthorities().contains(new Role(Role.ADMIN)) &&
+                    (
+                        currentUser.get().getAuthorities().contains(new Role(Role.OWNER)) &&
+                        !Objects.equals(currentUser.get().getId(), foundUser.get().getId())
+                    )
+                )
+            ) {
 
                 return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
 

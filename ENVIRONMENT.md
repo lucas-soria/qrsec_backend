@@ -6,15 +6,11 @@
 #                                           --- Endpoints ---
 - [ ] api.path=
 - [ ] api.path.invites=
-- [ ] api.path.admin.invites=
 - [ ] api.path.validate.invites=
 - [ ] api.path.public.invites=
 - [ ] api.path.guests=
-- [ ] api.path.admin.guests=
 - [ ] api.path.users=
-- [ ] api.path.admin.users=
 - [ ] api.path.addresses=
-- [ ] api.path.admin.addresses=
 
 
 #                                           --- Swagger ---

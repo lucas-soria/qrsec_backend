@@ -60,89 +60,10 @@ public class InviteController {
 
     List<String> availableActions = Arrays.asList("enable", "disable", "arrival", "departure");
 
-    @Operation(summary = "Get all Invites (privileged)", description = "Get all Invites from the neighbourhood")
-    @GetMapping("${api.path.admin.invites}")
-    @Parameter(
-            name = "X-Email",
-            description = "Email of the Admin that wants to see the Invites",
-            in = ParameterIn.HEADER,
-            required = true,
-            schema = @Schema(
-                    type = "string",
-                    example = "exa@mple.com"
-            )
-    )
-    @ApiResponses(value = {
-            @ApiResponse(
-                    responseCode = "200",
-                    description = "Invites successfully retrieved",
-                    content = @Content(
-                            mediaType = MediaType.APPLICATION_JSON_VALUE,
-                            array = @ArraySchema(
-                                    schema = @Schema(implementation = InviteDTO.class)
-                            )
-                    )
-            ),
-            @ApiResponse(
-                    responseCode = "204",
-                    description = "The neighbourhood has no Invites",
-                    content = @Content()
-            ),
-            @ApiResponse(
-                    responseCode = "401",
-                    description = "User is not Authorized (not a privileged User)",
-                    content = @Content()
-            ),
-            @ApiResponse(
-                    responseCode = "404",
-                    description = "User not found on the database",
-                    content = @Content()
-            ),
-            @ApiResponse(
-                    responseCode = "500",
-                    description = "Some error prevented the Invites from being retrieved",
-                    content = @Content()
-            )
-    })
-    public ResponseEntity<List<InviteDTO>> getInvites(
-            @RequestHeader(value = "X-Email") @NotNull String email
-    ) {
-
-        try {
-
-            // TODO: Add @PreAuthorize("hasAuthority('ADMIN')")
-            if (!userService.userIsAuthorized(email, new Role(Role.ADMIN))) {
-
-                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
-
-            }
-
-            List<Invite> invites = inviteService.findAll();
-            if (invites.isEmpty()) {
-
-                return ResponseEntity.noContent().build();
-
-            }
-
-            return ResponseEntity.ok(invites.stream().map(inviteMapper::inviteToInviteDTO).collect(Collectors.toList()));
-
-        }  catch (NotFoundException exception) {
-
-            log.error("Message: {}.", exception.getMessage());
-
-            return ResponseEntity.notFound().build();
-
-        } catch (Exception exception) {
-
-            log.error("Couldn't find all the Invites.\nMessage: {}.\nStackTrace:\n{}", exception.getMessage(), exception.getStackTrace());
-
-        }
-
-        return ResponseEntity.internalServerError().build();
-
-    }
-
-    @Operation(summary = "Get all Invites", description = "Get all Invites registered for the current Owner")
+    @Operation(summary = "Get all Invites", description = "Get Invites based on the current User:\n" +
+            "- ADMIN: All invites on the database" +
+            "- GUARD: All invites valid that day" +
+            "- OWNER: All owner's invites")
     @GetMapping("${api.path.invites}")
     @Parameter(
             name = "X-Email",
@@ -172,7 +93,7 @@ public class InviteController {
             ),
             @ApiResponse(
                     responseCode = "401",
-                    description = "User is not Authorized (not an Owner)",
+                    description = "User is not Authorized",
                     content = @Content()
             ),
             @ApiResponse(
@@ -186,20 +107,20 @@ public class InviteController {
                     content = @Content()
             )
     })
-    public ResponseEntity<List<InviteDTO>> getCurrentOwnerInvites(
+    public ResponseEntity<List<InviteDTO>> getCurrentUserInvites(
             @RequestHeader(value = "X-Email") @NotNull String email
     ) {
 
         try {
 
-            // TODO: Replace with @PreAuthorize("hasAuthority('OWNER')")
-            if (!userService.userIsAuthorized(email, new Role(Role.OWNER))) {
+            // TODO: Replace with @PreAuthorize("hasAuthority('OWNER') or hasAuthority('ADMIN') or hasAuthority('GUARD')")
+            if (userService.findByUsername(email).isEmpty()) {
 
                 return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
 
             }
 
-            List<Invite> invites = inviteService.findAllMyInvites(email);
+            List<Invite> invites = inviteService.findInvitesByCurrentUser(email);
             if (invites.isEmpty()) {
 
                 return ResponseEntity.noContent().build();
@@ -216,7 +137,7 @@ public class InviteController {
 
         } catch (Exception exception) {
 
-            log.error("Couldn't find all the Invites.\nMessage: {}.\nStackTrace:\n{}", exception.getMessage(), exception.getStackTrace());
+            log.error("Couldn't find the Invites.\nMessage: {}.\nStackTrace:\n{}", exception.getMessage(), exception.getStackTrace());
 
         }
 
@@ -292,7 +213,16 @@ public class InviteController {
                 return ResponseEntity.notFound().build();
 
             }
-            if ((currentUser.get().getAuthorities() == null || currentUser.get().getAuthorities().isEmpty()) || (userService.userIsAuthorized(email, new Role(Role.OWNER)) && !Objects.equals(invite.get().getOwner(), currentUser.get()))) {
+            if (
+                (
+                    currentUser.get().getAuthorities() == null ||
+                    currentUser.get().getAuthorities().isEmpty()
+                ) ||
+                (
+                    userService.userIsAuthorized(email, new Role(Role.OWNER)) &&
+                    !Objects.equals(invite.get().getOwner(), currentUser.get())
+                )
+            ) {
 
                 return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
 
@@ -633,7 +563,10 @@ public class InviteController {
 
             }
             // TODO: Replace with @PreAuthorize("hasAuthority('OWNER')")
-            if (!userService.userIsAuthorized(email, new Role(Role.OWNER)) && !Objects.equals(invite.get().getOwner(), currentUser.get())) {
+            if (
+                !userService.userIsAuthorized(email, new Role(Role.OWNER)) &&
+                !Objects.equals(invite.get().getOwner(), currentUser.get())
+            ) {
 
                 return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
 

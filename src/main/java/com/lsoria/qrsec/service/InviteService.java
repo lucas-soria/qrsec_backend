@@ -4,11 +4,14 @@ import java.time.DayOfWeek;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
 import com.lsoria.qrsec.domain.model.Invite;
+import com.lsoria.qrsec.domain.model.Role;
 import com.lsoria.qrsec.domain.model.User;
 import com.lsoria.qrsec.repository.InviteRepository;
 import com.lsoria.qrsec.service.exception.NotFoundException;
@@ -31,15 +34,66 @@ public class InviteService {
 
     private final DateTimeFormatter timeFormatter = DateTimeFormatter.ofPattern("HH:mm");
 
+    private final Role adminRole = new Role(Role.ADMIN);
+    private final Role guardRole = new Role(Role.GUARD);
+    private final Role ownerRole = new Role(Role.OWNER);
+
+    public List<Invite> findInvitesByCurrentUser(String username) throws Exception {
+
+        // TODO: String currentlyLoggedInUsername = new SecurityContextUserInfo().getUsername();
+
+        Optional<User> currentUser = userService.findByUsername(username);
+
+        if (currentUser.isEmpty()) {
+
+            throw new NotFoundException("User " + username + " not found");
+
+        }
+
+        User user = currentUser.get();
+        Set<Invite> invites = new HashSet<>();
+
+        if (user.getAuthorities().contains(adminRole)) {
+            invites.addAll(findAll());
+        }
+        if (user.getAuthorities().contains(guardRole)) {
+            invites.addAll(findAllValidForToday());
+        }
+        if (user.getAuthorities().contains(ownerRole)) {
+            invites.addAll(findAllMyInvites(username));
+        }
+
+        return new ArrayList<>(invites);
+
+    }
+
     public List<Invite> findAll() {
 
         return inviteRepository.findAll();
 
     }
 
+    public List<Invite> findAllValidForToday() {
+
+        // TODO: String currentlyLoggedInUsername = new SecurityContextUserInfo().getUsername();
+
+        List<Invite> allInvites = findAll();
+        LocalDateTime today = LocalDateTime.now();
+
+        List<Invite> invites = new ArrayList<>();
+        for (Invite invite : allInvites) {
+            if (validToday(today, invite)) {
+                invites.add(invite);
+            }
+        }
+
+        return invites;
+
+    }
+
     public List<Invite> findAllMyInvites(String username) throws Exception {
 
-        // String currentlyLoggedInUsername = new SecurityContextUserInfo().getUsername();
+        // TODO: String currentlyLoggedInUsername = new SecurityContextUserInfo().getUsername();
 
         Optional<User> currentUser = userService.findByUsername(username);
         if (currentUser.isEmpty()) {
@@ -60,7 +114,7 @@ public class InviteService {
 
     public Invite save(Invite invite, String username) throws Exception {
 
-        // String currentlyLoggedInUsername = new SecurityContextUserInfo().getUsername();
+        // TODO: String currentlyLoggedInUsername = new SecurityContextUserInfo().getUsername();
 
         Optional<User> currentUser = userService.findByUsername(username);
         if (currentUser.isEmpty()) {
@@ -147,14 +201,7 @@ public class InviteService {
             return false;
         }
 
-        DayOfWeek day = timestamp.getDayOfWeek();
-        int dayAsInt = day.getValue();
-        if (dayAsInt == 7) {
-            dayAsInt = 0;
-        }
-
-        Set<String> inviteDays = invite.getDays();
-        if (!inviteDays.isEmpty() && !inviteDays.contains(Integer.toString(dayAsInt))) {
+        if (!validToday(timestamp, invite)) {
             return false;
         }
 
@@ -176,6 +223,20 @@ public class InviteService {
         }
 
         return isInBetween;
+
+    }
+
+    private Boolean validToday(LocalDateTime timestamp, Invite invite) {
+
+        DayOfWeek day = timestamp.getDayOfWeek();
+        int dayAsInt = day.getValue();
+        if (dayAsInt == 7) {
+            dayAsInt = 0;
+        }
+
+        Set<String> inviteDays = invite.getDays();
+
+        return inviteDays.isEmpty() || inviteDays.contains(Integer.toString(dayAsInt));
 
     }
 

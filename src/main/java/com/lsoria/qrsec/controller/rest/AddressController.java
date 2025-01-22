@@ -56,7 +56,7 @@ public class AddressController {
     AddressMapper addressMapper;
 
     @Operation(summary = "Get all Addresses (privileged)", description = "Get all Addresses from the neighbourhood")
-    @GetMapping("${api.path.admin.addresses}")
+    @GetMapping("${api.path.addresses}")
     @Parameter(
             name = "X-Email",
             description = "Email of the Admin that wants to see the Addresses",
@@ -137,7 +137,7 @@ public class AddressController {
 
     }
 
-    @Operation(summary = "Get an Address (privileged)", description = "Get an specific Address")
+    @Operation(summary = "Get an Address (privileged or self)", description = "Get an specific Address")
     @GetMapping("${api.path.addresses}/{id}")
     @Parameter(
             name = "X-Email",
@@ -205,7 +205,19 @@ public class AddressController {
                 return ResponseEntity.notFound().build();
 
             }
-            if ((currentUser.get().getAuthorities() == null || currentUser.get().getAuthorities().isEmpty()) || (userService.userIsAuthorized(email, new Role(Role.OWNER)) && !Objects.equals(address.get(), currentUser.get().getAddress()))) {
+            if (
+                (
+                    currentUser.get().getAuthorities() == null ||
+                    currentUser.get().getAuthorities().isEmpty()
+                ) ||
+                (
+                    !currentUser.get().getAuthorities().contains(new Role(Role.ADMIN)) &&
+                    (
+                        currentUser.get().getAuthorities().contains(new Role(Role.OWNER)) &&
+                        !Objects.equals(address.get(), currentUser.get().getAddress())
+                    )
+                )
+            ) {
 
                 return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
 
@@ -214,12 +226,6 @@ public class AddressController {
             AddressDTO addressDTO = addressMapper.addressToAddressDTO(address.get());
 
             return ResponseEntity.ok(addressDTO);
-
-        } catch (NotFoundException exception) {
-
-            log.error("Message: {}.", exception.getMessage());
-
-            return ResponseEntity.notFound().build();
 
         } catch (Exception exception) {
 
@@ -288,8 +294,8 @@ public class AddressController {
 
         try {
 
-            // TODO: Replace with @PreAuthorize("hasAuthority('OWNER')")
-            if (!userService.userIsAuthorized(email, new Role(Role.OWNER))) {
+            // TODO: Replace with @PreAuthorize("hasAuthority('OWNER') or hasAuthority('ADMIN')
+            if (!userService.userIsAuthorized(email, new Role(Role.OWNER)) && !userService.userIsAuthorized(email, new Role(Role.ADMIN))) {
 
                 return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
 
@@ -394,7 +400,15 @@ public class AddressController {
                 return ResponseEntity.notFound().build();
 
             }
-            if ((!userService.userIsAuthorized(email, new Role(Role.ADMIN))) && (userService.userIsAuthorized(email, new Role(Role.OWNER)) && !Objects.equals(foundAddress.get(), currentUser.get().getAddress()))) {
+            if (
+                (
+                    !userService.userIsAuthorized(email, new Role(Role.ADMIN))
+                ) &&
+                (
+                    userService.userIsAuthorized(email, new Role(Role.OWNER)) &&
+                    !Objects.equals(foundAddress.get(), currentUser.get().getAddress())
+                )
+            ) {
 
                 return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
 
@@ -427,7 +441,7 @@ public class AddressController {
     @DeleteMapping("${api.path.addresses}/{id}")
     @Parameter(
             name = "X-Email",
-            description = "Email of the Owner that wants to delete the Invite",
+            description = "Email of the Owner that wants to delete the Address",
             in = ParameterIn.HEADER,
             required = true,
             schema = @Schema(
@@ -476,7 +490,7 @@ public class AddressController {
         try {
 
             // TODO: Replace with @PreAuthorize("hasAuthority('OWNER')")
-            if (!userService.userIsAuthorized(email, new Role(Role.OWNER))) {
+            if (!userService.userIsAuthorized(email, new Role(Role.OWNER)) && !userService.userIsAuthorized(email, new Role(Role.ADMIN))) {
 
                 return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
 
