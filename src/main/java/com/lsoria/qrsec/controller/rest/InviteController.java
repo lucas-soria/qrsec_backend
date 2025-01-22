@@ -2,6 +2,7 @@ package com.lsoria.qrsec.controller.rest;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -48,6 +49,8 @@ public class InviteController {
 
     @Autowired
     InviteMapper inviteMapper;
+
+    List<String> availableActions = Arrays.asList("enable", "disable", "arrival", "departure");
 
     @Operation(summary = "Get all Invites (privileged)", description = "Get all Invites from the neighbourhood")
     @GetMapping("${api.path.admin.invites}")
@@ -622,7 +625,7 @@ public class InviteController {
 
             }
             // TODO: Replace with @PreAuthorize("hasAuthority('OWNER')")
-            if (userService.userIsAuthorized(email, new Role(Role.OWNER)) && !Objects.equals(invite.get().getOwner(), currentUser.get())) {
+            if (!userService.userIsAuthorized(email, new Role(Role.OWNER)) && !Objects.equals(invite.get().getOwner(), currentUser.get())) {
 
                 return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
 
@@ -733,7 +736,7 @@ public class InviteController {
 
             }
             // TODO: Replace with @PreAuthorize("hasAuthority('GUARD')")
-            if (userService.userIsAuthorized(email, new Role(Role.GUARD))) {
+            if (!userService.userIsAuthorized(email, new Role(Role.GUARD))) {
 
                 return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
 
@@ -850,7 +853,7 @@ public class InviteController {
 
         try {
 
-            if (!Objects.equals(action, "arrival") && !Objects.equals(action, "departure")) {
+            if (!availableActions.contains(action)) {
 
                 return ResponseEntity.badRequest().build();
 
@@ -868,8 +871,8 @@ public class InviteController {
                 return ResponseEntity.notFound().build();
 
             }
-            // TODO: Replace with @PreAuthorize("hasAuthority('GUARD')")
-            if (userService.userIsAuthorized(email, new Role(Role.GUARD))) {
+            // TODO: Replace with @PreAuthorize("hasAuthority('OWNER')")
+            if (!userService.userIsAuthorized(email, new Role(Role.OWNER))) {
 
                 return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
 

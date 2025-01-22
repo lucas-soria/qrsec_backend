@@ -154,15 +154,15 @@ public class InviteService {
         }
 
         Set<String> inviteDays = invite.getDays();
-        if (!inviteDays.contains(Integer.toString(dayAsInt))) {
+        if (!inviteDays.isEmpty() && !inviteDays.contains(Integer.toString(dayAsInt))) {
             return false;
         }
 
         LocalTime timeFromTimestamp = timestamp.toLocalTime();
 
-        boolean isInBetween = false;
-
-        for (int i = 0; i < invite.getHours().size(); i++) {
+        List<List<String>> inviteHours = invite.getHours();
+        boolean isInBetween = inviteHours.isEmpty(); // If the list is empty it is a valid invite, no need to check
+        for (int i = 0; i < inviteHours.size(); i++) {
             String startTime = invite.getHours().get(i).get(0);
             String endTime = invite.getHours().get(i).get(1);
 
