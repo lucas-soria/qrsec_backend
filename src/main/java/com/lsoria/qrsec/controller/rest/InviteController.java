@@ -800,7 +800,7 @@ public class InviteController {
     )
     @Parameter(
             name = "action",
-            description = "Invite uuid",
+            description = "Actions you can do over an invite",
             in = ParameterIn.PATH,
             required = true,
             schema = @Schema(
