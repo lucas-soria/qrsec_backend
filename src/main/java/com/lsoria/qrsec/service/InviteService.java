@@ -124,6 +124,7 @@ public class InviteService {
         }
 
         inviteToDelete.setEnabled(false);
+        inviteToDelete.setLastModifiedAt(LocalDateTime.now());
         inviteRepository.save(inviteToDelete);
 
         return false;
@@ -145,8 +146,6 @@ public class InviteService {
         if (invite.getDepartureTime() != null && timestamp.isBefore(invite.getDepartureTime())) {
             return false;
         }
-
-        // TODO: Create endpoint to enable, update arrival/departure
 
         DayOfWeek day = timestamp.getDayOfWeek();
         int dayAsInt = day.getValue();
@@ -177,6 +176,32 @@ public class InviteService {
         }
 
         return isInBetween;
+
+    }
+
+    public Invite doAction(Invite invite, String action, LocalDateTime timestamp) throws Exception {
+
+        switch (action) {
+            case "arrival":
+                invite.setArrivalTime(timestamp);
+                break;
+            case "departure":
+                invite.setDepartureTime(timestamp);
+                break;
+            case "enable":
+                invite.setEnabled(true);
+                break;
+            case "disable":
+                invite.setEnabled(false);
+                break;
+            default:
+                throw new NotFoundException("Action " + action + " invalid");
+        }
+
+        invite.setLastModifiedAt(LocalDateTime.now());
+        this.inviteRepository.save(invite);
+
+        return invite;
 
     }
 
