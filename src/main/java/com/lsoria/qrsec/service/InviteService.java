@@ -1,8 +1,12 @@
 package com.lsoria.qrsec.service;
 
+import java.time.DayOfWeek;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 import com.lsoria.qrsec.domain.model.Invite;
 import com.lsoria.qrsec.domain.model.User;
@@ -24,6 +28,8 @@ public class InviteService {
 
     @Autowired
     UserService userService;
+
+    private final DateTimeFormatter timeFormatter = DateTimeFormatter.ofPattern("HH:mm");
 
     public List<Invite> findAll() {
 
@@ -118,9 +124,84 @@ public class InviteService {
         }
 
         inviteToDelete.setEnabled(false);
+        inviteToDelete.setLastModifiedAt(LocalDateTime.now());
         inviteRepository.save(inviteToDelete);
 
         return false;
+
+    }
+
+    public Boolean inviteIsValid(Invite invite, LocalDateTime timestamp) throws Exception {
+
+        if (!invite.getEnabled()) {
+            return false;
+        }
+
+        // If the person wants to get in before the invite was created -> invalid request
+        if (timestamp.isBefore(invite.getCreatedAt())) {
+            return false;
+        }
+
+        // If the person has left and the time they want to get in is before the time they left  -> invalid invite
+        if (invite.getDepartureTime() != null && timestamp.isBefore(invite.getDepartureTime())) {
+            return false;
+        }
+
+        DayOfWeek day = timestamp.getDayOfWeek();
+        int dayAsInt = day.getValue();
+        if (dayAsInt == 7) {
+            dayAsInt = 0;
+        }
+
+        Set<String> inviteDays = invite.getDays();
+        if (!inviteDays.isEmpty() && !inviteDays.contains(Integer.toString(dayAsInt))) {
+            return false;
+        }
+
+        LocalTime timeFromTimestamp = timestamp.toLocalTime();
+
+        List<List<String>> inviteHours = invite.getHours();
+        boolean isInBetween = inviteHours.isEmpty(); // If the list is empty it is a valid invite, no need to check
+        for (int i = 0; i < inviteHours.size(); i++) {
+            String startTime = invite.getHours().get(i).get(0);
+            String endTime = invite.getHours().get(i).get(1);
+
+            LocalTime parsedStartTime = LocalTime.parse(startTime, timeFormatter);
+            LocalTime parsedEndTime = LocalTime.parse(endTime, timeFormatter);
+
+            if (timeFromTimestamp.isAfter(parsedStartTime) && timeFromTimestamp.isBefore(parsedEndTime)) {
+                isInBetween = true;
+                break;
+            }
+        }
+
+        return isInBetween;
+
+    }
+
+    public Invite doAction(Invite invite, String action, LocalDateTime timestamp) throws Exception {
+
+        switch (action) {
+            case "arrival":
+                invite.setArrivalTime(timestamp);
+                break;
+            case "departure":
+                invite.setDepartureTime(timestamp);
+                break;
+            case "enable":
+                invite.setEnabled(true);
+                break;
+            case "disable":
+                invite.setEnabled(false);
+                break;
+            default:
+                throw new NotFoundException("Action " + action + " invalid");
+        }
+
+        invite.setLastModifiedAt(LocalDateTime.now());
+        this.inviteRepository.save(invite);
+
+        return invite;
 
     }
 

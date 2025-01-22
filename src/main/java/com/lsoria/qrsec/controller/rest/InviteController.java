@@ -1,5 +1,8 @@
 package com.lsoria.qrsec.controller.rest;
 
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -54,6 +57,8 @@ public class InviteController {
 
     @Autowired
     InviteMapper inviteMapper;
+
+    List<String> availableActions = Arrays.asList("enable", "disable", "arrival", "departure");
 
     @Operation(summary = "Get all Invites (privileged)", description = "Get all Invites from the neighbourhood")
     @GetMapping("${api.path.admin.invites}")
@@ -314,7 +319,7 @@ public class InviteController {
     }
 
     @Operation(summary = "Get a simplified Invite", description = "Get a specific Invite for the public to see in the web app")
-    @GetMapping("${api.path.public.invites}/{id}")
+    @GetMapping("${api.path.invites.public}/{id}")
     @Parameter(
             name = "id",
             description = "Invite uuid",
@@ -628,7 +633,7 @@ public class InviteController {
 
             }
             // TODO: Replace with @PreAuthorize("hasAuthority('OWNER')")
-            if (userService.userIsAuthorized(email, new Role(Role.OWNER)) && !Objects.equals(invite.get().getOwner(), currentUser.get())) {
+            if (!userService.userIsAuthorized(email, new Role(Role.OWNER)) && !Objects.equals(invite.get().getOwner(), currentUser.get())) {
 
                 return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
 
@@ -651,6 +656,261 @@ public class InviteController {
         } catch (Exception exception) {
 
             log.error("Couldn't delete the Invite {}.\nMessage: {}.\nStackTrace:\n{}", id, exception.getMessage(), exception.getStackTrace());
+
+        }
+
+        return ResponseEntity.internalServerError().build();
+
+    }
+
+    @Operation(summary = "Validate an Invite", description = "Check if an Invite is valid in a certain moment in time")
+    @GetMapping("${api.path.invites.validate}/{id}")
+    @Parameter(
+            name = "X-Email",
+            description = "Email of the Guard that wants to validate the Invite",
+            in = ParameterIn.HEADER,
+            required = true,
+            schema = @Schema(
+                    type = "string",
+                    example = "exa@mple.com"
+            )
+    )
+    @Parameter(
+            name = "X-Client-Timestamp",
+            description = "Timestamp of the Guard that is trying to validate the invite.\nShould be ISO 8601 formatted",
+            in = ParameterIn.HEADER,
+            required = true,
+            schema = @Schema(
+                    type = "string",
+                    example = "2024-09-23T14:30:00+02:00"
+            )
+    )
+    @Parameter(
+            name = "id",
+            description = "Invite uuid",
+            in = ParameterIn.PATH,
+            required = true,
+            schema = @Schema(
+                    type = "string",
+                    format = "uuid",
+                    example = "5f15a5256d2a2a1ac0e4d999"
+            )
+    )
+    @ApiResponses(value = {
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "Invite is valid",
+                    content = @Content()
+            ),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "Headers or path param are missing or invite is invalid",
+                    content = @Content()
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "User is not Authorized (not a Guard)",
+                    content = @Content()
+            ),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "Invite not found",
+                    content = @Content()
+            ),
+            @ApiResponse(
+                    responseCode = "500",
+                    description = "Some error prevented the Invite from being validated",
+                    content = @Content()
+            )
+    })
+    public ResponseEntity<InviteDTO> validateInvite(
+            @RequestHeader(value = "X-Email") @NotNull String email,
+            @RequestHeader(value = "X-Client-Timestamp") @NotNull String timestamp,
+            @PathVariable @NotNull String id
+    ) {
+
+        try {
+
+            Optional<User> currentUser = userService.findByUsername(email);
+            if (currentUser.isEmpty()) {
+
+                return ResponseEntity.notFound().build();
+
+            }
+            Optional<Invite> invite = inviteService.findOne(id);
+            if (invite.isEmpty()) {
+
+                return ResponseEntity.notFound().build();
+
+            }
+            // TODO: Replace with @PreAuthorize("hasAuthority('GUARD')")
+            if (!userService.userIsAuthorized(email, new Role(Role.GUARD))) {
+
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+
+            }
+
+            LocalDateTime parsedTimestamp = LocalDateTime.parse(timestamp, DateTimeFormatter.ISO_DATE_TIME);
+
+            if (!inviteService.inviteIsValid(invite.get(), parsedTimestamp)) {
+
+                return ResponseEntity.badRequest().build();
+
+            }
+
+            return ResponseEntity.ok().build();
+
+        } catch (NotFoundException exception) {
+
+            log.error("Message: {}.", exception.getMessage());
+
+            return ResponseEntity.notFound().build();
+
+        } catch (Exception exception) {
+
+            log.error("Couldn't validate the Invite {}.\nMessage: {}.\nStackTrace:\n{}", id, exception.getMessage(), exception.getStackTrace());
+
+        }
+
+        return ResponseEntity.internalServerError().build();
+
+    }
+
+    @Operation(summary = "Invite action", description = "Update Invite's arrival or departure time")
+    @PostMapping("${api.path.invites}/{id}/action/{action}")
+    @Parameter(
+            name = "X-Email",
+            description = "Email of the Guard that wants to update the Invite's arrival or departure time",
+            in = ParameterIn.HEADER,
+            required = true,
+            schema = @Schema(
+                    type = "string",
+                    example = "exa@mple.com"
+            )
+    )
+    @Parameter(
+            name = "X-Client-Timestamp",
+            description = "Timestamp of the Guard that is trying to update the Invite's arrival or departure time.\nShould be ISO 8601 formatted",
+            in = ParameterIn.HEADER,
+            required = true,
+            schema = @Schema(
+                    type = "string",
+                    example = "2024-09-23T14:30:00+02:00"
+            )
+    )
+    @Parameter(
+            name = "id",
+            description = "Invite uuid",
+            in = ParameterIn.PATH,
+            required = true,
+            schema = @Schema(
+                    type = "string",
+                    format = "uuid",
+                    example = "5f15a5256d2a2a1ac0e4d999"
+            )
+    )
+    @Parameter(
+            name = "action",
+            description = "Actions you can do over an invite",
+            in = ParameterIn.PATH,
+            required = true,
+            schema = @Schema(
+                    type = "string",
+                    allowableValues = {
+                            "arrival",
+                            "departure",
+                            "enable",
+                            "disable"
+                    },
+                    example = "5f15a5256d2a2a1ac0e4d999"
+            )
+    )
+    @ApiResponses(value = {
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "Invite is valid",
+                    content = @Content()
+            ),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "Headers or path param are missing or invite is invalid",
+                    content = @Content()
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "User is not Authorized (not a Guard)",
+                    content = @Content()
+            ),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "Invite not found",
+                    content = @Content()
+            ),
+            @ApiResponse(
+                    responseCode = "500",
+                    description = "Some error prevented the Invite from being updated",
+                    content = @Content()
+            )
+    })
+    public ResponseEntity<InviteDTO> inviteAction(
+            @RequestHeader(value = "X-Email") @NotNull String email,
+            @RequestHeader(value = "X-Client-Timestamp") @NotNull String timestamp,
+            @PathVariable @NotNull String id,
+            @PathVariable @NotNull String action
+    ) {
+
+        try {
+
+            if (!availableActions.contains(action)) {
+
+                return ResponseEntity.badRequest().build();
+
+            }
+
+            Optional<User> currentUser = userService.findByUsername(email);
+            if (currentUser.isEmpty()) {
+
+                return ResponseEntity.notFound().build();
+
+            }
+            Optional<Invite> invite = inviteService.findOne(id);
+            if (invite.isEmpty()) {
+
+                return ResponseEntity.notFound().build();
+
+            }
+            // TODO: Replace with @PreAuthorize("hasAuthority('OWNER')")
+            if (!userService.userIsAuthorized(email, new Role(Role.OWNER))) {
+
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+
+            }
+
+            LocalDateTime parsedTimestamp;
+
+            try {
+
+                parsedTimestamp = LocalDateTime.parse(timestamp, DateTimeFormatter.ISO_DATE_TIME);
+
+            } catch (Exception e) {
+
+                return ResponseEntity.badRequest().build();
+
+            }
+
+            Invite updatedInvite = inviteService.doAction(invite.get(), action, parsedTimestamp);
+
+            return ResponseEntity.ok(inviteMapper.inviteToInviteDTO(updatedInvite));
+
+        } catch (NotFoundException exception) {
+
+            log.error("Message: {}.", exception.getMessage());
+
+            return ResponseEntity.notFound().build();
+
+        } catch (Exception exception) {
+
+            log.error("Couldn't update the Invite's arrival or departure time {}.\nMessage: {}.\nStackTrace:\n{}", id, exception.getMessage(), exception.getStackTrace());
 
         }
 
