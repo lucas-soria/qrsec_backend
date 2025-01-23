@@ -54,7 +54,7 @@ public class GuestController {
     GuestMapper guestMapper;
 
     @Operation(summary = "Get all Guests", description = "Get Guests based on the current User:\n" +
-            "- ADMIN: All Guests on the database" +
+            "- ADMIN: All Guests on the database\n" +
             "- OWNER: All owner's guests")
     @GetMapping("${api.path.guests}")
     @Parameter(

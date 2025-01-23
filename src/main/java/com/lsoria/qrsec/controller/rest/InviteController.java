@@ -61,8 +61,8 @@ public class InviteController {
     List<String> availableActions = Arrays.asList("enable", "disable", "arrival", "departure");
 
     @Operation(summary = "Get all Invites", description = "Get Invites based on the current User:\n" +
-            "- ADMIN: All invites on the database" +
-            "- GUARD: All invites valid that day" +
+            "- ADMIN: All invites on the database\n" +
+            "- GUARD: All invites valid that day\n" +
             "- OWNER: All owner's invites")
     @GetMapping("${api.path.invites}")
     @Parameter(
