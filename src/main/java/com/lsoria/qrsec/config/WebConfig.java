@@ -1,6 +1,6 @@
 package com.lsoria.qrsec.config;
 
-import java.util.Collections;
+import java.util.Arrays;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -34,10 +34,10 @@ public class WebConfig implements WebMvcConfigurer {
     public CorsConfigurationSource corsConfigurationSource() {
 
         final CorsConfiguration corsConfiguration = new CorsConfiguration();
-        corsConfiguration.setAllowedOrigins(Collections.singletonList(this.allowedOrigins));
-        corsConfiguration.setAllowedMethods(Collections.singletonList(this.allowedMethods));
+        corsConfiguration.setAllowedOrigins(Arrays.asList(allowedOrigins.split(",")));
+        corsConfiguration.setAllowedMethods(Arrays.asList(allowedMethods.split(",")));
         corsConfiguration.setAllowCredentials(this.allowCredentials);
-        corsConfiguration.setAllowedHeaders(Collections.singletonList(this.allowedHeaders));
+        corsConfiguration.setAllowedHeaders(Arrays.asList(allowedHeaders.split(",")));
 
         final UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration(this.path+"/**", corsConfiguration);
