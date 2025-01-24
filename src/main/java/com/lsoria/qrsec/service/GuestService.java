@@ -1,10 +1,13 @@
 package com.lsoria.qrsec.service;
 
+import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
 import com.lsoria.qrsec.domain.model.Guest;
+import com.lsoria.qrsec.domain.model.Role;
 import com.lsoria.qrsec.domain.model.User;
 import com.lsoria.qrsec.repository.GuestRepository;
 import com.lsoria.qrsec.service.exception.NotFoundException;
@@ -24,6 +27,36 @@ public class GuestService {
 
     @Autowired
     UserService userService;
+
+    private final Role adminRole = new Role(Role.ADMIN);
+    private final Role guardRole = new Role(Role.GUARD);
+    private final Role ownerRole = new Role(Role.OWNER);
+
+    public List<Guest> findGuestsByCurrentUser(String username) throws Exception {
+
+        // TODO: String currentlyLoggedInUsername = new SecurityContextUserInfo().getUsername();
+
+        Optional<User> currentUser = userService.findByUsername(username);
+
+        if (currentUser.isEmpty()) {
+
+            throw new NotFoundException("User " + username + " not found");
+
+        }
+
+        User user = currentUser.get();
+        Set<Guest> guests = new HashSet<>();
+
+        if (user.getAuthorities().contains(adminRole)) {
+            guests.addAll(findAll());
+        }
+        if (user.getAuthorities().contains(ownerRole)) {
+            guests.addAll(findAllMyGuests(username));
+        }
+
+        return new ArrayList<>(guests);
+
+    }
 
     public List<Guest> findAll() {
 

@@ -56,7 +56,7 @@ public class AddressController {
     AddressMapper addressMapper;
 
     @Operation(summary = "Get all Addresses (privileged)", description = "Get all Addresses from the neighbourhood")
-    @GetMapping("${api.path.admin.addresses}")
+    @GetMapping("${api.path.addresses}")
     @Parameter(
             name = "X-Email",
             description = "Email of the Admin that wants to see the Addresses",
@@ -137,7 +137,7 @@ public class AddressController {
 
     }
 
-    @Operation(summary = "Get an Address (privileged)", description = "Get an specific Address")
+    @Operation(summary = "Get an Address (privileged or self)", description = "Get an specific Address")
     @GetMapping("${api.path.addresses}/{id}")
     @Parameter(
             name = "X-Email",
@@ -196,7 +196,7 @@ public class AddressController {
             Optional<User> currentUser = userService.findByUsername(email);
             if (currentUser.isEmpty()) {
 
-                return ResponseEntity.notFound().build();
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
 
             }
             Optional<Address> address = addressService.findOne(id);
@@ -205,7 +205,19 @@ public class AddressController {
                 return ResponseEntity.notFound().build();
 
             }
-            if ((currentUser.get().getAuthorities() == null || currentUser.get().getAuthorities().isEmpty()) || (userService.userIsAuthorized(email, new Role(Role.OWNER)) && !Objects.equals(address.get(), currentUser.get().getAddress()))) {
+            if (
+                (
+                    currentUser.get().getAuthorities() == null ||
+                    currentUser.get().getAuthorities().isEmpty()
+                ) ||
+                (
+                    !currentUser.get().getAuthorities().contains(new Role(Role.ADMIN)) &&
+                    (
+                        currentUser.get().getAuthorities().contains(new Role(Role.OWNER)) &&
+                        !Objects.equals(address.get(), currentUser.get().getAddress())
+                    )
+                )
+            ) {
 
                 return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
 
@@ -214,12 +226,6 @@ public class AddressController {
             AddressDTO addressDTO = addressMapper.addressToAddressDTO(address.get());
 
             return ResponseEntity.ok(addressDTO);
-
-        } catch (NotFoundException exception) {
-
-            log.error("Message: {}.", exception.getMessage());
-
-            return ResponseEntity.notFound().build();
 
         } catch (Exception exception) {
 
@@ -231,7 +237,7 @@ public class AddressController {
 
     }
 
-    @Operation(summary = "Create an Address", description = "Save an Address for later use on a User")
+    @Operation(summary = "Create an Address (privileged)", description = "Save an Address for later use on a User")
     @PostMapping("${api.path.addresses}")
     @Parameter(
             name = "X-Email",
@@ -271,11 +277,6 @@ public class AddressController {
                     content = @Content()
             ),
             @ApiResponse(
-                    responseCode = "404",
-                    description = "User not found",
-                    content = @Content()
-            ),
-            @ApiResponse(
                     responseCode = "500",
                     description = "Some error prevented the Address from being created",
                     content = @Content()
@@ -288,8 +289,8 @@ public class AddressController {
 
         try {
 
-            // TODO: Replace with @PreAuthorize("hasAuthority('OWNER')")
-            if (!userService.userIsAuthorized(email, new Role(Role.OWNER))) {
+            // TODO: Replace with hasAuthority('ADMIN')
+            if (!userService.userIsAuthorized(email, new Role(Role.ADMIN))) {
 
                 return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
 
@@ -308,6 +309,12 @@ public class AddressController {
 
             return ResponseEntity.status(HttpStatus.CONFLICT).build();
 
+        } catch (NotFoundException notFoundException) {
+
+            log.error("Message: {}.", notFoundException.getMessage());
+
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+
         } catch (Exception exception) {
 
             log.error("Couldn't create Address with values:\n{}\nMessage: {}.\nStackTrace:\n{}", addressDTO, exception.getMessage(), exception.getStackTrace());
@@ -318,7 +325,7 @@ public class AddressController {
 
     }
 
-    @Operation(summary = "Update an Address", description = "Update address's information")
+    @Operation(summary = "Update an Address (privileged or self)", description = "Update address's information")
     @PutMapping("${api.path.addresses}/{id}")
     @Parameter(
             name = "X-Email",
@@ -385,7 +392,7 @@ public class AddressController {
             Optional<User> currentUser = userService.findByUsername(email);
             if (currentUser.isEmpty()) {
 
-                return ResponseEntity.notFound().build();
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
 
             }
             Optional<Address> foundAddress = addressService.findOne(id);
@@ -394,7 +401,15 @@ public class AddressController {
                 return ResponseEntity.notFound().build();
 
             }
-            if ((!userService.userIsAuthorized(email, new Role(Role.ADMIN))) && (userService.userIsAuthorized(email, new Role(Role.OWNER)) && !Objects.equals(foundAddress.get(), currentUser.get().getAddress()))) {
+            if (
+                (
+                    !userService.userIsAuthorized(email, new Role(Role.ADMIN))
+                ) &&
+                (
+                    userService.userIsAuthorized(email, new Role(Role.OWNER)) &&
+                    !Objects.equals(foundAddress.get(), currentUser.get().getAddress())
+                )
+            ) {
 
                 return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
 
@@ -423,11 +438,11 @@ public class AddressController {
 
     }
 
-    @Operation(summary = "Delete an Address", description = "The Address will no longer be available in the database")
+    @Operation(summary = "Delete an Address (privileged)", description = "The Address will no longer be available in the database")
     @DeleteMapping("${api.path.addresses}/{id}")
     @Parameter(
             name = "X-Email",
-            description = "Email of the Owner that wants to delete the Invite",
+            description = "Email of the Admin that wants to delete the Address",
             in = ParameterIn.HEADER,
             required = true,
             schema = @Schema(
@@ -475,8 +490,8 @@ public class AddressController {
 
         try {
 
-            // TODO: Replace with @PreAuthorize("hasAuthority('OWNER')")
-            if (!userService.userIsAuthorized(email, new Role(Role.OWNER))) {
+            // TODO: Replace with @PreAuthorize("hasAuthority('ADMIN')")
+            if (!userService.userIsAuthorized(email, new Role(Role.ADMIN))) {
 
                 return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
 
