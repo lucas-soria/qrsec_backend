@@ -97,11 +97,6 @@ public class InviteController {
                     content = @Content()
             ),
             @ApiResponse(
-                    responseCode = "404",
-                    description = "User not found on the database",
-                    content = @Content()
-            ),
-            @ApiResponse(
                     responseCode = "500",
                     description = "Some error prevented the Invites from being retrieved",
                     content = @Content()
@@ -133,7 +128,7 @@ public class InviteController {
 
             log.error("Message: {}.", exception.getMessage());
 
-            return ResponseEntity.notFound().build();
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
 
         } catch (Exception exception) {
 
@@ -204,7 +199,7 @@ public class InviteController {
             Optional<User> currentUser = userService.findByUsername(email);
             if (currentUser.isEmpty()) {
 
-                return ResponseEntity.notFound().build();
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
 
             }
             Optional<Invite> invite = inviteService.findOne(id);
@@ -236,7 +231,7 @@ public class InviteController {
 
             log.error("Message: {}.", exception.getMessage());
 
-            return ResponseEntity.notFound().build();
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
 
         } catch (Exception exception) {
 
@@ -308,7 +303,7 @@ public class InviteController {
 
     }
 
-    @Operation(summary = "Create an Invite", description = "Save an invite for later use")
+    @Operation(summary = "Create an Invite (self)", description = "Save an invite for later use")
     @PostMapping("${api.path.invites}")
     @Parameter(
             name = "X-Email",
@@ -338,18 +333,8 @@ public class InviteController {
                     )
             ),
             @ApiResponse(
-                    responseCode = "209",
-                    description = "Invite already existed",
-                    content = @Content()
-            ),
-            @ApiResponse(
                     responseCode = "401",
                     description = "User is not Authorized",
-                    content = @Content()
-            ),
-            @ApiResponse(
-                    responseCode = "404",
-                    description = "User not found",
                     content = @Content()
             ),
             @ApiResponse(
@@ -385,7 +370,7 @@ public class InviteController {
 
             log.error("Message: {}.", exception.getMessage());
 
-            return ResponseEntity.notFound().build();
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
 
         } catch (Exception exception) {
 
@@ -397,7 +382,7 @@ public class InviteController {
 
     }
 
-    @Operation(summary = "Update an Invite", description = "Update invite's information")
+    @Operation(summary = "Update an Invite (self)", description = "Update invite's information")
     @PutMapping("${api.path.invites}/{id}")
     @Parameter(
             name = "X-Email",
@@ -444,7 +429,7 @@ public class InviteController {
             ),
             @ApiResponse(
                     responseCode = "404",
-                    description = "Invite or User not found",
+                    description = "Invite not found",
                     content = @Content()
             ),
             @ApiResponse(
@@ -462,7 +447,8 @@ public class InviteController {
         try {
 
             // TODO: Replace with @PreAuthorize("hasAuthority('OWNER')")
-            if (!userService.userIsAuthorized(email, new Role(Role.OWNER))) {
+            Optional<User> currentUser = userService.findByUsername(email);
+            if (currentUser.isEmpty()) {
 
                 return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
 
@@ -472,6 +458,21 @@ public class InviteController {
             if (foundInvite.isEmpty()) {
 
                 return ResponseEntity.notFound().build();
+
+            }
+
+            if (
+                (
+                    currentUser.get().getAuthorities() == null ||
+                    currentUser.get().getAuthorities().isEmpty()
+                ) ||
+                (
+                    userService.userIsAuthorized(email, new Role(Role.OWNER)) &&
+                    !Objects.equals(foundInvite.get().getOwner(), currentUser.get())
+                )
+            ) {
+
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
 
             }
 
@@ -486,7 +487,7 @@ public class InviteController {
 
             log.error("Message: {}.", exception.getMessage());
 
-            return ResponseEntity.notFound().build();
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
 
         } catch (Exception exception) {
 
@@ -498,7 +499,7 @@ public class InviteController {
 
     }
 
-    @Operation(summary = "Delete an Invite", description = "Delete or disable an Invite")
+    @Operation(summary = "Delete an Invite (self)", description = "Delete or disable an Invite")
     @DeleteMapping("${api.path.invites}/{id}")
     @Parameter(
             name = "X-Email",
@@ -534,7 +535,7 @@ public class InviteController {
             ),
             @ApiResponse(
                     responseCode = "404",
-                    description = "Invite or Owner not found",
+                    description = "Invite not found",
                     content = @Content()
             ),
             @ApiResponse(
@@ -553,7 +554,7 @@ public class InviteController {
             Optional<User> currentUser = userService.findByUsername(email);
             if (currentUser.isEmpty()) {
 
-                return ResponseEntity.notFound().build();
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
 
             }
             Optional<Invite> invite = inviteService.findOne(id);
@@ -584,7 +585,7 @@ public class InviteController {
 
             log.error("Message: {}.", exception.getMessage());
 
-            return ResponseEntity.notFound().build();
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
 
         } catch (Exception exception) {
 
@@ -596,7 +597,7 @@ public class InviteController {
 
     }
 
-    @Operation(summary = "Validate an Invite", description = "Check if an Invite is valid in a certain moment in time")
+    @Operation(summary = "Validate an Invite (guard)", description = "Check if an Invite is valid in a certain moment in time")
     @GetMapping("${api.path.invites.validate}/{id}")
     @Parameter(
             name = "X-Email",
@@ -637,12 +638,12 @@ public class InviteController {
             ),
             @ApiResponse(
                     responseCode = "400",
-                    description = "Headers or path param are missing or invite is invalid",
+                    description = "Invite is invalid",
                     content = @Content()
             ),
             @ApiResponse(
                     responseCode = "401",
-                    description = "User is not Authorized (not a Guard)",
+                    description = "User is not Authorized",
                     content = @Content()
             ),
             @ApiResponse(
@@ -667,7 +668,7 @@ public class InviteController {
             Optional<User> currentUser = userService.findByUsername(email);
             if (currentUser.isEmpty()) {
 
-                return ResponseEntity.notFound().build();
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
 
             }
             Optional<Invite> invite = inviteService.findOne(id);
@@ -697,7 +698,7 @@ public class InviteController {
 
             log.error("Message: {}.", exception.getMessage());
 
-            return ResponseEntity.notFound().build();
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
 
         } catch (Exception exception) {
 
@@ -709,7 +710,7 @@ public class InviteController {
 
     }
 
-    @Operation(summary = "Invite action", description = "Update Invite's arrival or departure time")
+    @Operation(summary = "Invite action (guard)", description = "Update Invite's arrival or departure time")
     @PostMapping("${api.path.invites}/{id}/action/{action}")
     @Parameter(
             name = "X-Email",
@@ -766,12 +767,12 @@ public class InviteController {
             ),
             @ApiResponse(
                     responseCode = "400",
-                    description = "Headers or path param are missing or invite is invalid",
+                    description = "Path param is invalid",
                     content = @Content()
             ),
             @ApiResponse(
                     responseCode = "401",
-                    description = "User is not Authorized (not a Guard)",
+                    description = "User is not Authorized",
                     content = @Content()
             ),
             @ApiResponse(
@@ -803,7 +804,7 @@ public class InviteController {
             Optional<User> currentUser = userService.findByUsername(email);
             if (currentUser.isEmpty()) {
 
-                return ResponseEntity.notFound().build();
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
 
             }
             Optional<Invite> invite = inviteService.findOne(id);
@@ -839,7 +840,7 @@ public class InviteController {
 
             log.error("Message: {}.", exception.getMessage());
 
-            return ResponseEntity.notFound().build();
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
 
         } catch (Exception exception) {
 

@@ -84,11 +84,6 @@ public class UserController {
                     content = @Content()
             ),
             @ApiResponse(
-                    responseCode = "404",
-                    description = "User not found on the database",
-                    content = @Content()
-            ),
-            @ApiResponse(
                     responseCode = "500",
                     description = "Some error prevented the Users from being retrieved",
                     content = @Content()
@@ -120,7 +115,7 @@ public class UserController {
 
             log.error("Message: {}.", exception.getMessage());
 
-            return ResponseEntity.notFound().build();
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
 
         } catch (Exception exception) {
 
@@ -191,7 +186,7 @@ public class UserController {
             Optional<User> currentUser = userService.findByUsername(email);
             if (currentUser.isEmpty()) {
 
-                return ResponseEntity.notFound().build();
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
 
             }
             Optional<User> user = userService.findOne(id);
@@ -363,7 +358,7 @@ public class UserController {
             Optional<User> currentUser = userService.findByUsername(email);
             if (currentUser.isEmpty()) {
 
-                return ResponseEntity.notFound().build();
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
 
             }
             Optional<User> foundUser = userService.findOne(id);
@@ -462,7 +457,7 @@ public class UserController {
             Optional<User> currentUser = userService.findByUsername(email);
             if (currentUser.isEmpty()) {
 
-                return ResponseEntity.notFound().build();
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
 
             }
             Optional<User> foundUser = userService.findOne(id);
