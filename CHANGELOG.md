@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.0.5] - 2025-01-22 ([#11](https://github.com/lucas-soria/qrsec_backend/pull/11))
+### Removed
+- /admin/ endpoints.
+
+### Changed
+- Modified other endpoints to use Roles as authority levels to retrieve information.
+
+### Fixed
+- CORS policies had to be lists.
+
 ## [0.0.4] - 2025-01-21 ([#9](https://github.com/lucas-soria/qrsec_backend/pull/9))
 ### Added
 - Invite validation algorithm and endpoint.
