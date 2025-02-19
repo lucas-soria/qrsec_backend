@@ -12,7 +12,6 @@ import com.lsoria.qrsec.service.exception.NotFoundException;
 import org.springframework.dao.DuplicateKeyException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -23,9 +22,6 @@ public class UserService {
 
     @Autowired
     UserRepository userRepository;
-
-    @Autowired
-    PasswordEncoder passwordEncoder;
 
     public List<User> findAll() {
 
@@ -49,8 +45,6 @@ public class UserService {
 
         try {
 
-            user.setPassword(passwordEncoder.encode(user.getPassword()));
-
             return userRepository.insert(user);
 
         } catch (DuplicateKeyException duplicateKeyException) {
@@ -68,7 +62,6 @@ public class UserService {
         oldUser.setEnabled(updatedUser.getEnabled());
         oldUser.setFirstName(updatedUser.getFirstName());
         oldUser.setLastName(updatedUser.getLastName());
-        oldUser.setPassword(passwordEncoder.encode(updatedUser.getPassword()));
         oldUser.setPhone(updatedUser.getPhone());
         oldUser.setUsername(updatedUser.getUsername());
 

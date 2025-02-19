@@ -144,6 +144,8 @@ public class InviteService {
 
     public Invite update(Invite oldInvite, Invite updatedInvite) {
 
+        oldInvite.setDescription(updatedInvite.getDescription());
+
         oldInvite.setGuests(updatedInvite.getGuests());
 
         oldInvite.setDays(updatedInvite.getDays());

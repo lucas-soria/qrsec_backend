@@ -12,20 +12,18 @@ import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.data.mongodb.core.mapping.DocumentReference;
 import org.springframework.data.mongodb.core.mapping.Field;
-import org.springframework.security.core.userdetails.UserDetails;
 
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
 @Document(collection = "users")
-public class User implements UserDetails {
+public class User {
 
     @Id
     private String id;
     @Indexed(unique = true, sparse = true)
     @Field("email")
     private String username;
-    private String password;
     private Set<Role> authorities = new HashSet<>();
     @Field("first_name")
     private String firstName;
@@ -38,31 +36,11 @@ public class User implements UserDetails {
     private String phone;
     private Boolean enabled = false;
 
-    public User(String username, String password, Set<Role> authorities){
+    public User(String username, Set<Role> authorities){
         this.username = username;
-        this.password = password;
         this.authorities = authorities;
     }
 
-    @Override
-    @JsonIgnore
-    public boolean isAccountNonExpired() {
-        return this.enabled;
-    }
-
-    @Override
-    @JsonIgnore
-    public boolean isAccountNonLocked() {
-        return this.enabled;
-    }
-
-    @Override
-    @JsonIgnore
-    public boolean isCredentialsNonExpired() {
-        return this.enabled;
-    }
-
-    @Override
     @JsonIgnore
     public boolean isEnabled() {
         return this.enabled;
