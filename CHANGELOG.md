@@ -7,13 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [0.0.6] - 2025-03-18 ([#13](https://github.com/lucas-soria/qrsec_backend/pull/13))
+## [1.0.0] - 2025-03-03 ([#13](https://github.com/lucas-soria/qrsec_backend/pull/13))
 ### Removed
 - Removed password from User entity.
 - Removed password encoder service.
 
 ### Added
-- Added "check if user exists" endpoint.
+- Guest validation before to showing public invite info.
+  - SimplifiedGuestDTO.
+- Auth google endpoint and service.
+  - AuthResponseDTO.
+
+### Changed
+- Timestamp handling on the validateInvite endpoint (/invites/validate/{id}).
+- Invites are created with status "enabled".
+- First user is created with role admin and is enabled by default.
 
 ## [0.0.5] - 2025-01-22 ([#11](https://github.com/lucas-soria/qrsec_backend/pull/11))
 ### Removed
