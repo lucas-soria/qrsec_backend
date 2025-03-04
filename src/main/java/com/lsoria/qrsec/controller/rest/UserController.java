@@ -268,7 +268,6 @@ public class UserController {
 
             User userToCreate = userMapper.userDTOToUser(userDTO);
             userToCreate.setId(null);
-            userToCreate.setEnabled(false);
 
             User createdUser = userService.save(userToCreate);
 
@@ -498,62 +497,6 @@ public class UserController {
         } catch (Exception exception) {
 
             log.error("Couldn't delete User {}.\nMessage: {}.\nStackTrace:\n{}", id, exception.getMessage(), exception.getStackTrace());
-
-        }
-
-        return ResponseEntity.internalServerError().build();
-
-    }
-
-    @Operation(summary = "Check if user exists", description = "Check weather a user exists or not\n" +
-            "(Should be replaced with OAuth token validation)")
-    @GetMapping("${api.path.users}/exists/{email}")
-    @Parameter(
-            name = "email",
-            description = "User email",
-            in = ParameterIn.PATH,
-            required = true,
-            schema = @Schema(
-                    type = "string",
-                    format = "email",
-                    example = "exa@mple.com"
-            )
-    )
-    @ApiResponses(value = {
-            @ApiResponse(
-                    responseCode = "200",
-                    description = "User exists",
-                    content = @Content()
-            ),
-            @ApiResponse(
-                    responseCode = "400",
-                    description = "User doesn't exists or bad request",
-                    content = @Content()
-            ),
-            @ApiResponse(
-                    responseCode = "500",
-                    description = "Some error prevented the User from being retrieved",
-                    content = @Content()
-            )
-    })
-    public ResponseEntity<UserDTO> checkExists(
-            @PathVariable @NotNull String email
-    ) {
-
-        try {
-
-            Optional<User> user = userService.findByUsername(email);
-            if (user.isEmpty()) {
-
-                return ResponseEntity.badRequest().build();
-
-            }
-
-            return ResponseEntity.ok().build();
-
-        } catch (Exception exception) {
-
-            log.error("Couldn't find the User {}.\nMessage: {}.\nStackTrace:\n{}", email, exception.getMessage(), exception.getStackTrace());
 
         }
 
