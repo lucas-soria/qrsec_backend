@@ -222,7 +222,7 @@ public class UserController {
 
         } catch (Exception exception) {
 
-            log.error("Couldn't find the Guest {}.\nMessage: {}.\nStackTrace:\n{}", id, exception.getMessage(), exception.getStackTrace());
+            log.error("Couldn't find the User {}.\nMessage: {}.\nStackTrace:\n{}", id, exception.getMessage(), exception.getStackTrace());
 
         }
 
@@ -268,7 +268,6 @@ public class UserController {
 
             User userToCreate = userMapper.userDTOToUser(userDTO);
             userToCreate.setId(null);
-            userToCreate.setEnabled(false);
 
             User createdUser = userService.save(userToCreate);
 

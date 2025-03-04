@@ -19,7 +19,6 @@ public class UserDTO {
     @Schema(accessMode = Schema.AccessMode.READ_ONLY)
     private String id;
     private String email;
-    private String password;
     private Set<Role> authorities = new HashSet<>();
     private String firstName;
     private String lastName;
