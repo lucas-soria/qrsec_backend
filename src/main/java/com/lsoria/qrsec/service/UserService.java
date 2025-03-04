@@ -1,7 +1,9 @@
 package com.lsoria.qrsec.service;
 
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 import com.lsoria.qrsec.domain.model.Role;
 import com.lsoria.qrsec.domain.model.User;
@@ -9,10 +11,9 @@ import com.lsoria.qrsec.repository.UserRepository;
 import com.lsoria.qrsec.service.exception.ConflictException;
 import com.lsoria.qrsec.service.exception.NotFoundException;
 
-import org.springframework.dao.DuplicateKeyException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -23,9 +24,6 @@ public class UserService {
 
     @Autowired
     UserRepository userRepository;
-
-    @Autowired
-    PasswordEncoder passwordEncoder;
 
     public List<User> findAll() {
 
@@ -47,9 +45,18 @@ public class UserService {
 
     public User save(User user) throws Exception {
 
-        try {
+        if (userRepository.count() == 0) {
+            user.setEnabled(true);
+            Set<Role> roles = new HashSet<>();
+            roles.add(new Role(Role.ADMIN));
+            user.setAuthorities(roles);
+        } else {
+            user.setEnabled(false);
+            Set<Role> roles = new HashSet<>();
+            user.setAuthorities(roles);
+        }
 
-            user.setPassword(passwordEncoder.encode(user.getPassword()));
+        try {
 
             return userRepository.insert(user);
 
@@ -68,7 +75,6 @@ public class UserService {
         oldUser.setEnabled(updatedUser.getEnabled());
         oldUser.setFirstName(updatedUser.getFirstName());
         oldUser.setLastName(updatedUser.getLastName());
-        oldUser.setPassword(passwordEncoder.encode(updatedUser.getPassword()));
         oldUser.setPhone(updatedUser.getPhone());
         oldUser.setUsername(updatedUser.getUsername());
 
