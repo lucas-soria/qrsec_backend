@@ -10,7 +10,9 @@ import java.util.stream.Collectors;
 
 import com.lsoria.qrsec.domain.dto.InviteDTO;
 import com.lsoria.qrsec.domain.dto.PublicInviteDTO;
+import com.lsoria.qrsec.domain.dto.SimplifiedGuestDTO;
 import com.lsoria.qrsec.domain.dto.mapper.InviteMapper;
+import com.lsoria.qrsec.domain.model.Guest;
 import com.lsoria.qrsec.domain.model.Invite;
 import com.lsoria.qrsec.domain.model.Role;
 import com.lsoria.qrsec.domain.model.User;
@@ -243,8 +245,8 @@ public class InviteController {
 
     }
 
-    @Operation(summary = "Get a simplified Invite", description = "Get a specific Invite for the public to see in the web app")
-    @GetMapping("${api.path.invites.public}/{id}")
+    @Operation(summary = "Validate Guest access to Invite", description = "Get a specific and simplified Invite for the public to see in the web app")
+    @PostMapping("${api.path.invites.public}/{id}")
     @Parameter(
             name = "id",
             description = "Invite uuid",
@@ -254,6 +256,14 @@ public class InviteController {
                     type = "string",
                     format = "uuid",
                     example = "5f15a5256d2a2a1ac0e4d999"
+            )
+    )
+    @io.swagger.v3.oas.annotations.parameters.RequestBody(
+            description = "Guest info",
+            required = true,
+            content = @Content(
+                    mediaType = MediaType.APPLICATION_JSON_VALUE,
+                    schema = @Schema(implementation = SimplifiedGuestDTO.class)
             )
     )
     @ApiResponses(value = {
@@ -266,8 +276,8 @@ public class InviteController {
                     )
             ),
             @ApiResponse(
-                    responseCode = "404",
-                    description = "Invite not found",
+                    responseCode = "400",
+                    description = "Invalid data provided",
                     content = @Content()
             ),
             @ApiResponse(
@@ -277,7 +287,8 @@ public class InviteController {
             )
     })
     public ResponseEntity<PublicInviteDTO> getPublicInvite(
-            @PathVariable @NotNull String id
+            @PathVariable @NotNull String id,
+            @RequestBody SimplifiedGuestDTO simplifiedGuest
     ) {
 
         try {
@@ -285,7 +296,23 @@ public class InviteController {
            Optional<Invite> invite = inviteService.findOne(id);
             if (invite.isEmpty()) {
 
-                return ResponseEntity.notFound().build();
+                return ResponseEntity.badRequest().build();
+
+            }
+
+            boolean hasGuest = false;
+            for (Guest guest : invite.get().getGuests()) {
+                if (guest.getDni().equals(simplifiedGuest.getDni())) {
+
+                    hasGuest = true;
+                    break;
+
+                }
+            }
+
+            if (!hasGuest) {
+
+                return ResponseEntity.badRequest().build();
 
             }
 
@@ -361,6 +388,7 @@ public class InviteController {
             newInvite.setId(null);
             newInvite.setArrivalTime(null);
             newInvite.setDepartureTime(null);
+            newInvite.setEnabled(true);
 
             Invite createdInvite = inviteService.save(newInvite, email);
 
@@ -684,9 +712,7 @@ public class InviteController {
 
             }
 
-            LocalDateTime parsedTimestamp = LocalDateTime.parse(timestamp, DateTimeFormatter.ISO_DATE_TIME);
-
-            if (!inviteService.inviteIsValid(invite.get(), parsedTimestamp)) {
+            if (!inviteService.inviteIsValid(invite.get(), timestamp)) {
 
                 return ResponseEntity.badRequest().build();
 
